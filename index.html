@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>BrAPI Pedigree Viewer</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    </head>
+    <body>
+        <div style="margin:1em">
+            <h4>Requires: D3, jQuery</h4>
+            <h1>BrAPI Pedigree Viewer</h1>
+            <form id="brapi-form" action="#"  class="form-inline" style="margin:1em;">
+                <div class="form-group">
+                    <label for="brapi-server">BrAPI Server Adress</label>
+                    <input type="text" class="form-control" id="brapi-server" name="server" value="http://127.0.0.1:3000">
+                </div>
+                <div class="form-group">
+                    <label for="brapi-username">Username</label>
+                    <input type="text" class="form-control" id="brapi-username" name="username" placeholder="John_Doe">
+                </div>
+                <div class="form-group">
+                    <label for="brapi-password">Password</label>
+                    <input type="password" class="form-control" id="brapi-password" name="password" placeholder="••••••••••••">
+                </div>
+                <br>
+                <br>
+                <div class="form-group">
+                    <label for="brapi-germplasm">Germplasm ID</label>
+                    <input type="text" class="form-control" id="brapi-germplasm" name="germplasm" value="38843">
+                </div>
+                <input type="submit" action="#" id="load-brapi" class="btn btn-primary" value="Load"/>
+                <i id="load-spin" class="fa fa-spinner fa-spin" style="display: none;font-size:14px"></i>
+            </form>
+
+        </div>
+        <div style="width:100%;position:relative;">
+            <div style="margin:auto;width:1000px;height:401px;border:solid thin black;">
+                <svg id="pdgv-canv" viewbox="0 0 1000 400" style="width:100%"></svg>
+            </div>
+        </div>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.12.0/d3.js"></script>
+        <script src="d3-pedigree-tree.js" charset="utf-8"></script>
+        <script src="PedigreeViewer.js" charset="utf-8"></script>
+        <script src="main.js" charset="utf-8"></script>
+    </body>
+</html>
