@@ -7,7 +7,7 @@ $(document).ready(function(){
             vals[entry.name] = entry.value
             return vals
         },{});
-        var pdg = PedigreeViewer("http://127.0.0.1:3000");
+        var pdg = PedigreeViewer(form.server);
         if (form.username){
             pdg.auth(form.username,form.password,function(){
                 this.newTree(form.germplasm,draw)
