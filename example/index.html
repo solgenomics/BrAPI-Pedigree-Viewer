@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>
+      BrAPI Pedigree Viewer
+    </title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  </head>
+  <body style="padding:2em;">
+    <h1>
+      BrAPI Pedigree Viewer
+    </h1>
+    <div class="forward-container">
+      <form id="brapi-form" action="#" class="form-inline" style="margin:1em;" name="brapi-form">
+        <div class="form-group">
+          <label for="brapi-server">BrAPI Server Adress</label> <input type="text" class="form-control" id="brapi-server" name="server" value="http://127.0.0.1:3000">
+        </div>
+        <div class="form-group">
+          <label for="brapi-username">Username</label> <input type="text" class="form-control" id="brapi-username" name="username" placeholder="John_Doe">
+        </div>
+        <div class="form-group">
+          <label for="brapi-password">Password</label> <input type="password" class="form-control" id="brapi-password" name="password" placeholder="••••••••••••">
+        </div><br>
+        <br>
+        <div class="form-group">
+          <label for="brapi-germplasm">Germplasm ID</label> <input type="text" class="form-control" id="brapi-germplasm" name="germplasm" value="38843">
+        </div><input type="submit" action="#" id="load-brapi" class="btn btn-primary" value="Load"> <i id="load-spin" class="fa fa-spinner fa-spin" style="display: none;font-size:14px"></i>
+      </form>
+    </div>
+    <div class="brapp-container" style="position:relative;">
+      <div value="brapp-wrapper" style="display:inline-block; border:solid 1px #ccc;border-radius:4px;">
+        <div class="brapp-body" style="background-color:#fff;border-top-left-radius:4px;border-top-right-radius:4px;">
+          <div style="margin:auto;width:1000px;height:401px;border:solid thin black;">
+            <!--Location of Pedigree Tree-->
+          </div>
+          <div style="clear:both"></div>
+        </div>
+        <div class="brapp-footer" style="background-color:#ddd;border-top:solid 1px #ccc;font-family:Arial;color:#555;font-size:11px;padding:0.3em;border-bottom-left-radius:4px;border-bottom-right-radius:4px;">
+          <div style="min-height:14px;text-align:right;">
+            <a href="https://github.com/solgenomics/BrAPI-Pedigree-Viewer" style="color:inherit;white-space:nowrap;text-decoration:underline;">Pedigree Viewer</a> developed at the <a href="https://btiscience.org/" style="color:inherit;white-space:nowrap;text-decoration:underline;">Boyce Thompson Institute</a>
+          </div>
+        </div>
+      </div>
+    </div><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.js">
+</script> <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.12.0/d3.js">
+</script> <script src="d3-pedigree-tree.js" charset="utf-8">
+</script> <script src="PedigreeViewer.js" charset="utf-8">
+</script> <script type="text/javascript">
+;(function(){
+
+    $(document).ready(function(){
+    $("#brapi-form").submit(function(){
+        $("#load-spin").show();
+        var form = $(this).serializeArray().reduce(function(vals,entry){
+            vals[entry.name] = entry.value
+            return vals
+        },{});
+        var pdg = PedigreeViewer("http://127.0.0.1:3000");
+        if (form.username){
+            pdg.auth(form.username,form.password,function(){
+                this.newTree(form.germplasm,draw)
+            });
+        }
+        else {
+            pdg.newTree(form.germplasm,draw);
+        }
+        return false;
+    });
+    });
+    function draw(){
+    $("#load-spin").hide();
+    this.drawViewer("#pdgv-canv");
+    };
+    })();
+    </script>
+  </body>
+</html>

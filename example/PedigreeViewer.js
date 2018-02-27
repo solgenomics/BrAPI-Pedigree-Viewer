@@ -1,6 +1,10 @@
-;(function(){
-    window.PedigreeViewer = PedigreeViewer;
-    function PedigreeViewer(server){
+(function (global, factory) {
+    typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+    typeof define === 'function' && define.amd ? define(factory) :
+    (global.PedigreeViewer = factory());
+}(this, (function () { 'use strict';
+
+function PedigreeViewer(server){
         var pdgv = {};
         var base_url = server;
         if (base_url.slice(0,8)!="https://" && base_url.slice(0,7)!="http://"){
@@ -40,9 +44,9 @@
         };
         
         pdgv.drawViewer = function(loc){
-            locationSelector = loc
+            locationSelector = loc;
             drawTree();
-        }
+        };
         
         function createNewTree(start_nodes) {  
             myTree = d3.pedigreeTree()
@@ -109,12 +113,12 @@
                         })
                     });
                 }
-            }
+            };
             $.ajax({
                 type: "GET",
                 url: base_url+"brapi/v1/germplasm/"+stock_id+"/pedigree",
                 data: {},
-                success: function(response){callback_wrapper(response,null)},
+                success: function(response){callback_wrapper(response,null);},
             });
             $.ajax({
                 type: "GET",
@@ -123,7 +127,7 @@
                     "pageSize" : 10000000,
                     "page" : 0
                 },
-                success: function(response){callback_wrapper(null,response)},
+                success: function(response){callback_wrapper(null,response);},
             });
         }
         
@@ -174,7 +178,7 @@
               var zoom_group = pdg.append('g').classed('pdg-zoom',true).data([zoom]);
               
               content = zoom_group.append('g').classed('pdg-content',true);
-              content.datum({'zoom':zoom})
+              content.datum({'zoom':zoom});
               zoom.on("zoom",function(){
                 zoom_group.attr('transform',d3.event.transform);
               });
@@ -190,7 +194,7 @@
                     .scale(scale)
                 );
             }
-            content.datum().zoom.scaleExtent([0.5,d3.max([pdgtree_height,pdgtree_width])/200])
+            content.datum().zoom.scaleExtent([0.5,d3.max([pdgtree_height,pdgtree_width])/200]);
             content.transition(trans)
               .attr('transform',
                 d3.zoomIdentity
@@ -253,7 +257,7 @@
               .attr('fill',"white");
             //create expander handles on nodes
             var expanders = nodeNodes.append('g').classed("expanders",true);
-            var child_expander = expanders.append("g").classed("child-expander",true)
+            var child_expander = expanders.append("g").classed("child-expander",true);
             child_expander.append("path")
               .attr("fill","none")
               .attr("stroke","purple")
@@ -285,7 +289,7 @@
                   drawTree(d3.transition().duration(700));
               });
             });
-            var parent_expander = expanders.append("g").classed("parent-expander",true)
+            var parent_expander = expanders.append("g").classed("parent-expander",true);
             parent_expander.append("path")
               .attr("fill","none")
               .attr("stroke","purple")
@@ -405,7 +409,7 @@
                 }
               }
               return 'gray';
-            }
+            };
             
             //make links
             var links = linkLayer.selectAll('.link')
@@ -466,5 +470,7 @@
             return h1/h2;
         }
     }
-    
-})();
+
+return PedigreeViewer;
+
+})));
