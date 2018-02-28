@@ -15,7 +15,7 @@
     <div class="forward-container">
       <form id="brapi-form" action="#" class="form-inline" style="margin:1em;" name="brapi-form">
         <div class="form-group">
-          <label for="brapi-server">BrAPI Server Adress</label> <input type="text" class="form-control" id="brapi-server" name="server" value="http://127.0.0.1:3000">
+          <label for="brapi-server">BrAPI Server Adress</label> <input type="text" class="form-control" id="brapi-server" name="server" value="https://cassavabase.org">
         </div>
         <div class="form-group">
           <label for="brapi-username">Username</label> <input type="text" class="form-control" id="brapi-username" name="username" placeholder="John_Doe">
@@ -25,16 +25,17 @@
         </div><br>
         <br>
         <div class="form-group">
-          <label for="brapi-germplasm">Germplasm ID</label> <input type="text" class="form-control" id="brapi-germplasm" name="germplasm" value="38843">
+          <label for="brapi-germplasm">Germplasm ID</label> <input type="text" class="form-control" id="brapi-germplasm" name="germplasm" value="38778">
         </div><input type="submit" action="#" id="load-brapi" class="btn btn-primary" value="Load"> <i id="load-spin" class="fa fa-spinner fa-spin" style="display: none;font-size:14px"></i>
       </form>
     </div>
     <div class="brapp-container" style="position:relative;">
       <div value="brapp-wrapper" style="display:inline-block; border:solid 1px #ccc;border-radius:4px;">
         <div class="brapp-body" style="background-color:#fff;border-top-left-radius:4px;border-top-right-radius:4px;">
-          <div style="margin:auto;width:1000px;height:401px;border:solid thin black;">
-            <!--Location of Pedigree Tree-->
+          <div style="padding:0.25em;text-align:center;border-bottom:solid 1px #ccc;">
+            <span style="white-space:nowrap;"><span class="glyphicon glyphicon-move" aria-hidden="true"></span> Drag to Pan</span> &nbsp;&nbsp; <span style="white-space:nowrap;"><span class="glyphicon glyphicon-zoom-in" aria-hidden="true"></span> Scroll to Zoom</span> &nbsp;&nbsp; <span style="white-space:nowrap;"><span class="glyphicon glyphicon-minus" style="color:red;" aria-hidden="true"></span> Female Parent</span> &nbsp;&nbsp; <span style="white-space:nowrap;"><span class="glyphicon glyphicon-minus" style="color:blue;" aria-hidden="true"></span> Male Parent</span> &nbsp;&nbsp; <span style="white-space:nowrap;"><span class="glyphicon glyphicon-circle-arrow-right" style="color:purple;" aria-hidden="true"></span> Expand Pedigree</span>
           </div>
+          <div id="pdgv-wrap" style="min-height:400px;min-width:800px;"></div>
           <div style="clear:both"></div>
         </div>
         <div class="brapp-footer" style="background-color:#ddd;border-top:solid 1px #ccc;font-family:Arial;color:#555;font-size:11px;padding:0.3em;border-bottom-left-radius:4px;border-bottom-right-radius:4px;">
@@ -47,6 +48,7 @@
 </script> <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.12.0/d3.js">
 </script> <script src="d3-pedigree-tree.js" charset="utf-8">
 </script> <script src="PedigreeViewer.js" charset="utf-8">
+</script> <script src="BrAPI.js" charset="utf-8">
 </script> <script type="text/javascript">
 ;(function(){
 
@@ -57,21 +59,21 @@
             vals[entry.name] = entry.value
             return vals
         },{});
-        var pdg = PedigreeViewer("http://127.0.0.1:3000");
+        var auth = undefined;
         if (form.username){
-            pdg.auth(form.username,form.password,function(){
-                this.newTree(form.germplasm,draw)
-            });
+            auth = {
+                'username':form.username,
+                'password':form.password
+            };
         }
-        else {
-            pdg.newTree(form.germplasm,draw);
-        }
+        var pdg = PedigreeViewer(form.server,auth);
+        pdg.newTree(form.germplasm,draw);
         return false;
     });
     });
     function draw(){
     $("#load-spin").hide();
-    this.drawViewer("#pdgv-canv");
+    this.drawViewer("#pdgv-wrap",800,400);
     };
     })();
     </script>

@@ -19,9 +19,9 @@
   },
   "homepage": "https://github.com/solgenomics/BrAPI-Pedigree-Viewer#readme",
   "dependencies": {
-    "@solgenomics/brapijs": "^0.2.6",
-    "@solgenomics/brapp-wrapper": "^1.0.0",
-    "@solgenomics/d3-pedigree-tree": "^1.0.3"
+    "@solgenomics/brapijs": "^0.3.3",
+    "@solgenomics/brapp-wrapper": "^1.1.0",
+    "@solgenomics/d3-pedigree-tree": "^1.1.1"
   },
   "brapp": {
     "out": "example/index.html",

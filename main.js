@@ -1,5 +1,5 @@
 
-    export default function PedigreeViewer(server){
+    export default function PedigreeViewer(server,auth){
         var pdgv = {};
         var base_url = server;
         if (base_url.slice(0,8)!="https://" && base_url.slice(0,7)!="http://"){
@@ -8,24 +8,12 @@
         if (base_url.slice(-1)!="/"){
             base_url+="/";
         }
+        var brapijs = BrAPI(base_url+"brapi/v1",auth);
         var root = null;
         var access_token = null;
         var loaded_nodes = {};
         var myTree = null;
         var locationSelector = null;
-        
-        
-        pdgv.auth = function(username,password,callback){
-            $.ajax({
-                type: "POST",
-                url: base_url+"brapi/v1/token",
-                data: {'username':username,'password':password},
-                success: function(response){
-                    access_token = response.access_token;
-                    callback.call(pdgv);
-                },
-            });
-        };
         
         pdgv.newTree = function(stock_id,callback){
             loaded_nodes = {};
@@ -38,9 +26,9 @@
             });
         };
         
-        pdgv.drawViewer = function(loc){
+        pdgv.drawViewer = function(loc,draw_width,draw_height){
             locationSelector = loc
-            drawTree();
+            drawTree(undefined,draw_width,draw_height);
         }
         
         function createNewTree(start_nodes) {  
@@ -65,77 +53,46 @@
         }
         
         function load_nodes(stock_ids,callback){
-            var total = stock_ids.length;
-            var nodes = stock_ids.map(function(){return null});
-            var response_count = 0;
-            var collector = function(i,node){
-                response_count+=1;
-                nodes[i] = node;
-                if(response_count==total){
-                    nodes = nodes.filter(function(node){
-                        if (!loaded_nodes.hasOwnProperty(node.id)){
-                            loaded_nodes[node.id] = node;
-                            return true;
-                        }
-                        return false;
-                    });
-                    callback(nodes);
+            var germplasm = brapijs.data(stock_ids);
+            var pedigrees = germplasm.germplasm_pedigree(function(d){return {'germplasmDbId':d}});
+            var progenies = germplasm.germplasm_progeny(function(d){return {'germplasmDbId':d}},"map");
+            pedigrees.join(progenies,germplasm).filter(function(ped_pro_germId){
+                if (ped_pro_germId[0]===null || ped_pro_germId[1]===null) {
+                    console.log("Failed to load progeny or pedigree for "+ped_pro_germId[2]);
+                    return false;
                 }
-            };
-            stock_ids.forEach(function(stock_id,i){
-                _load_node(stock_id,function(node){
-                    collector(i,node);
-                });
-            });
+                return true;
+            }).map(function(ped_pro_germId){
+                return {
+                    'id':ped_pro_germId[2],
+                    'mother_id':ped_pro_germId[0].parent1Id,
+                    'father_id':ped_pro_germId[0].parent2Id,
+                    'name':ped_pro_germId[1].defaultDisplayName,
+                    'children':ped_pro_germId[1].data.filter(Boolean).map(function(d){
+                        return d.progenyGermplasmDbId;
+                    })
+                };
+            }).each(function(node){
+                loaded_nodes[node.id] = node;
+            }).all(callback);
         }
         
-        function _load_node(stock_id,callback){
-            var callback_wrapper = function(parents,progeny){
-                if(parents!=null){
-                    callback_wrapper.parents = parents;
-                }
-                if(progeny!=null){
-                    callback_wrapper.progeny = progeny;
-                }
-                if(callback_wrapper.parents!=undefined&&callback_wrapper.progeny!=undefined){
-                    callback({
-                        'id':callback_wrapper.parents.result.germplasmDbId,
-                        'mother_id':callback_wrapper.parents.result.parent1Id,
-                        'father_id':callback_wrapper.parents.result.parent2Id,
-                        'name':callback_wrapper.progeny.result.defaultDisplayName,
-                        'children':callback_wrapper.progeny.result.data.filter(Boolean).map(function(d){
-                            return d.progenyGermplasmDbId;
-                        })
-                    });
-                }
-            }
-            $.ajax({
-                type: "GET",
-                url: base_url+"brapi/v1/germplasm/"+stock_id+"/pedigree",
-                data: {},
-                success: function(response){callback_wrapper(response,null)},
-            });
-            $.ajax({
-                type: "GET",
-                url: base_url+"brapi/v1/germplasm/"+stock_id+"/progeny",
-                data: {
-                    "pageSize" : 10000000,
-                    "page" : 0
-                },
-                success: function(response){callback_wrapper(null,response)},
-            });
-        }
-        
-        function drawTree(trans){
+        function drawTree(trans,draw_width,draw_height){
             
             var layout = myTree();
-            var svg_selector = locationSelector;
             
             //set default change-transtion to no duration
             trans = trans || d3.transition().duration(0);
             
             //make wrapper(pdg)
-            var canv = d3.select(svg_selector);
+            var wrap = d3.select(locationSelector);
+            var canv = wrap.select("svg.pedigreeViewer");
+            if (canv.empty()){
+                canv = wrap.append("svg").classed("pedigreeViewer",true)
+                    .attr("width",draw_width)
+                    .attr("height",draw_height)
+                    .attr("viewbox","0 0 "+draw_width+" "+draw_height);
+            }
             var cbbox = canv.node().getBoundingClientRect();
             var canvw = cbbox.width, 
                 canvh = cbbox.height;
@@ -154,6 +111,7 @@
                 .attr('width',canvw*1000)
                 .attr('height',canvh*1000)
                 .attr('fill',"white")
+                .attr('opacity',"0.00001")
                 .attr('stroke','none');
             }
             
