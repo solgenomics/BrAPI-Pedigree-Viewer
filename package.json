@@ -1,6 +1,6 @@
 {
   "name": "@solgenomics/brapi-pedigree-viewer",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Try it out [here](https://solgenomics.github.io/BrAPI-Pedigree-Viewer/)",
   "main": "build/PedigreeViewer.js",
   "scripts": {
