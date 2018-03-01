@@ -5,6 +5,29 @@
 
 ![GIF of Example Implementation](example.gif)
 
+### Usage
+
+First, create a PedigreeViewer object:
+```js
+var server = "https://brapi.myserver.org/brapi/v1", //REQUIRED, brapi root url, NO trailing slash.
+    auth = {username:'myname', password:'mysecret'}, //OPTIONAL object containing key/value BrAPI authentication params (null or undefined for no auth)
+    sgn_url = function(germplasmDbId){ //OPTIONAL a function which returns a link to a germplasm information page, returning null will create a node without a link.
+        return "https://brapi.myserver.org/germ/"+germplasmDbId+".html";
+    };
+var pdg = PedigreeViewer(server, auth, sgn_url);
+```
+Then, draw the viewer:
+```js
+var initial_germplasm = "1234", //REQUIRED single germplasmDbId which should be displayed on start (highlighted in pink)
+    dom_parent_selector = "div#pdgv-wrap", //REQUIRED selector for the parent node of the new viewer SVG element.
+    width = 800, //OPTIONAL width of viewer
+    height = 400; //OPTIONAL height of viewer
+pdg.newTree(initial_germplasm, function(){
+    // this callback is called once the new tree has been initialized.
+    pdg.drawViewer(dom_parent_selector, width, height); // only draw the tree once the new tree has been initialized!
+});
+```
+
 ### Requirements
 - Implementation of the [upcoming "progeny" BrAPI call](https://github.com/plantbreeding/API/issues/151)
 - [@solgenomics/brapijs](https://github.com/solgenomics/BrAPI.js)

@@ -35,7 +35,7 @@
           <div style="padding:0.25em;text-align:center;border-bottom:solid 1px #ccc;">
             <span style="white-space:nowrap;"><span class="glyphicon glyphicon-move" aria-hidden="true"></span> Drag to Pan</span> &nbsp;&nbsp; <span style="white-space:nowrap;"><span class="glyphicon glyphicon-zoom-in" aria-hidden="true"></span> Scroll to Zoom</span> &nbsp;&nbsp; <span style="white-space:nowrap;"><span class="glyphicon glyphicon-minus" style="color:red;" aria-hidden="true"></span> Female Parent</span> &nbsp;&nbsp; <span style="white-space:nowrap;"><span class="glyphicon glyphicon-minus" style="color:blue;" aria-hidden="true"></span> Male Parent</span> &nbsp;&nbsp; <span style="white-space:nowrap;"><span class="glyphicon glyphicon-circle-arrow-right" style="color:purple;" aria-hidden="true"></span> Expand Pedigree</span>
           </div>
-          <div id="pdgv-wrap" style="min-height:400px;min-width:800px;"></div>
+          <div id="pdgv-wrap"></div>
           <div style="clear:both"></div>
         </div>
         <div class="brapp-footer" style="background-color:#ddd;border-top:solid 1px #ccc;font-family:Arial;color:#555;font-size:11px;padding:0.3em;border-bottom-left-radius:4px;border-bottom-right-radius:4px;">
@@ -66,15 +66,25 @@
                 'password':form.password
             };
         }
-        var pdg = PedigreeViewer(form.server,auth);
-        pdg.newTree(form.germplasm,draw);
+        var base_url = form.server;
+        if (base_url.slice(0,8)!="https://" && base_url.slice(0,7)!="http://"){
+            base_url ="https://"+base_url;
+        }
+        if (base_url.slice(-1)!="/"){
+            base_url+="/";
+        }
+        base_url+="brapi/v1";
+        var pdg = PedigreeViewer(base_url,auth,sgn_url);
+        pdg.newTree(form.germplasm,function(){
+            $("#load-spin").hide();
+            pdg.drawViewer("#pdgv-wrap",800,400);
+        });
         return false;
     });
     });
-    function draw(){
-    $("#load-spin").hide();
-    this.drawViewer("#pdgv-wrap",800,400);
-    };
+    function sgn_url(dbId){
+    return "https://cassavabase.org/stock/"+dbId+"/view";
+    }
     })();
     </script>
   </body>

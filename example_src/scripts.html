@@ -20,14 +20,24 @@ $(document).ready(function(){
                 'password':form.password
             };
         }
-        var pdg = PedigreeViewer(form.server,auth);
-        pdg.newTree(form.germplasm,draw);
+        var base_url = form.server;
+        if (base_url.slice(0,8)!="https://" && base_url.slice(0,7)!="http://"){
+            base_url ="https://"+base_url;
+        }
+        if (base_url.slice(-1)!="/"){
+            base_url+="/";
+        }
+        base_url+="brapi/v1";
+        var pdg = PedigreeViewer(base_url,auth,sgn_url);
+        pdg.newTree(form.germplasm,function(){
+            $("#load-spin").hide();
+            pdg.drawViewer("#pdgv-wrap",800,400);
+        });
         return false;
     });
 });
-function draw(){
-    $("#load-spin").hide();
-    this.drawViewer("#pdgv-wrap",800,400);
-};
+function sgn_url(dbId){
+    return "https://cassavabase.org/stock/"+dbId+"/view";
+}
 })();
 </script>

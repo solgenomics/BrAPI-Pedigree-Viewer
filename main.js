@@ -1,5 +1,5 @@
 
-    export default function PedigreeViewer(server,auth){
+    export default function PedigreeViewer(server,auth,urlFunc){
         var pdgv = {};
         var base_url = server;
         if (base_url.slice(0,8)!="https://" && base_url.slice(0,7)!="http://"){
@@ -15,6 +15,8 @@
         var myTree = null;
         var locationSelector = null;
         
+        urlFunc = urlFunc!=undefined?urlFunc:function(){return null};
+                
         pdgv.newTree = function(stock_id,callback){
             loaded_nodes = {};
             load_nodes([stock_id],function(nodes){
@@ -295,13 +297,34 @@
               .attr("rx",10)
               .attr("ry",10)
               .attr("x",-100);
-            nodeNodes.append('text').classed('node-name-text',true)
-              .attr('y',15)
-              .attr('text-anchor',"middle")
-              .text(function(d){
-                return d.value.name;
-              })
-              .attr('fill',"black");
+              var nodeUrlLinks = nodeNodes.filter(function(d){
+                  var url = urlFunc(d.id);
+                  if (url!==null){
+                    d.url = url;
+                    return true;
+                  }
+                  return false;
+                })
+                .append('a')
+                .attr('href',function(d){
+                  return urlFunc(d.id);
+                })
+                .attr('target','_blank')
+                .append('text').classed('node-name-text',true)
+                .attr('y',15)
+                .attr('text-anchor',"middle")
+                .text(function(d){
+                  return d.value.name;
+                })
+                .attr('fill',"black");
+              nodeNodes.filter(function(d){return d.url===undefined;})
+                .append('text').classed('node-name-text',true)
+                .attr('y',15)
+                .attr('text-anchor',"middle")
+                .text(function(d){
+                  return d.value.name;
+                })
+                .attr('fill',"black");
             //set node width to text width
             nodeNodes.each(function(d){
                 var nn = d3.select(this);
