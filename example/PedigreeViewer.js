@@ -6,14 +6,7 @@
 
 function PedigreeViewer(server,auth,urlFunc){
         var pdgv = {};
-        var base_url = server;
-        if (base_url.slice(0,8)!="https://" && base_url.slice(0,7)!="http://"){
-            base_url ="https://"+base_url;
-        }
-        if (base_url.slice(-1)!="/"){
-            base_url+="/";
-        }
-        var brapijs = BrAPI(base_url+"brapi/v1",auth);
+        var brapijs = BrAPI(server,auth);
         var root = null;
         var access_token = null;
         var loaded_nodes = {};
