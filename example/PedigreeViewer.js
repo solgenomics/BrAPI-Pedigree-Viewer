@@ -16,14 +16,30 @@ function PedigreeViewer(server,auth,urlFunc){
         urlFunc = urlFunc!=undefined?urlFunc:function(){return null};
                 
         pdgv.newTree = function(stock_id,callback){
+            root = stock_id;
             loaded_nodes = {};
-            load_nodes([stock_id],function(nodes){
-                nodes.forEach(function(node){
-                    root = node.id;
+            var all_nodes = [];
+            load_node_and_all_ancestors([stock_id]);
+            function load_node_and_all_ancestors(ids){
+                load_nodes(ids,function(nodes){
+                    [].push.apply(all_nodes,nodes);
+                    var mothers = nodes.map(function(d){return d.mother_id});
+                    var fathers = nodes.map(function(d){return d.father_id});
+                    var parents = mothers.concat(fathers).filter(function(d, index, self){
+                        return d!==undefined &&
+                               d!==null &&
+                               loaded_nodes[d]===undefined &&
+                               self.indexOf(d) === index;
+                    });
+                    if (parents.length>0){
+                        load_node_and_all_ancestors(parents);
+                    }
+                    else {
+                        createNewTree(all_nodes);
+                        callback.call(pdgv);
+                    }
                 });
-                createNewTree(nodes);
-                callback.call(pdgv);
-            });
+            }
         };
         
         pdgv.drawViewer = function(loc,draw_width,draw_height){
@@ -47,7 +63,7 @@ function PedigreeViewer(server,auth,urlFunc){
                 return node.id;
               })
               .groupChildless(true)
-              .iterations(10)
+              .iterations(50)
               .data(start_nodes)
               .excludeFromGrouping([root]);
         }
