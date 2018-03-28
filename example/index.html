@@ -73,8 +73,11 @@
         if (base_url.slice(-1)!="/"){
             base_url+="/";
         }
+        var main_url = base_url;
         base_url+="brapi/v1";
-        var pdg = PedigreeViewer(base_url,auth,sgn_url);
+        var pdg = PedigreeViewer(base_url,auth,function(dbId){
+            return main_url+"stock/"+dbId+"/view";
+        });
         pdg.newTree(form.germplasm,function(){
             $("#load-spin").hide();
             pdg.drawViewer("#pdgv-wrap",800,400);
@@ -82,9 +85,6 @@
         return false;
     });
     });
-    function sgn_url(dbId){
-    return "https://cassavabase.org/stock/"+dbId+"/view";
-    }
     })();
     </script>
   </body>
