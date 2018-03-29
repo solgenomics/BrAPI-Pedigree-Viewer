@@ -843,7 +843,7 @@ class Reduce_Node extends Context_Node{
         this.addTask(task);
         var self = this;
         parent.addFinishHook(function(data, key){
-            out_datum = reductionFunc==undefined?data:data.reduce(reductionFunc,initialValue);
+            var out_datum = reductionFunc==undefined?data:data.reduce(reductionFunc,initialValue);
             task.complete(out_datum);
             self.publishResult(task);
         });
@@ -862,10 +862,11 @@ class Fork_Node extends Context_Node{
                 var task = new Task(forked_key, key);
                 forked_key+=1;
                 self.addTask(task);
-                task.complete(newDatum);
+                task.stored_result = newDatum;
                 newTasks.push(task);
             });
             newTasks.forEach(function(task){
+                task.complete(task.stored_result);
                 self.publishResult(task);
             });
         });
@@ -1052,6 +1053,7 @@ class BrAPI_Behavior_Node extends Context_Node{
             state = {
                 'is_paginated': undefined,
                 'concatenated': undefined,
+                'sentry': undefined,
                 'forked_key': 0
             };
         }
@@ -1066,7 +1068,7 @@ class BrAPI_Behavior_Node extends Context_Node{
             page_url+=this.formatURLParams(d_call.params);
         }
         
-        var sentry_task = new Task(unforked_key);
+        var sentry_task = state.sentry || new Task((page_num==pageRange[0]?"":"SENTRY"+page_num)+unforked_key);
         this.addTask(sentry_task);
         
         var self = this;
@@ -1090,7 +1092,7 @@ class BrAPI_Behavior_Node extends Context_Node{
                     }
                 }
                 if(state.is_paginated){
-                    var final_page = Math.min(+json.metadata.pagination.totalPages-1,pageRange[1])-1;
+                    var final_page = Math.min(+json.metadata.pagination.totalPages-1,pageRange[1]);
                     if(self.behavior=="fork"){
                         if (page_num<final_page){
                             self.loadPage(page_num+1,unforked_key,d_call,fetch_args,pageRange,state);
@@ -1105,22 +1107,26 @@ class BrAPI_Behavior_Node extends Context_Node{
                         });
                         sentry_task.setKey(state.forked_key, unforked_key);
                         state.forked_key+=1;
-                        sentry_task.complete(json.result.data[json.result.data.length-1]);
+                        var sent_res = json.result.data[json.result.data.length-1];
+                        sent_res["__response"] = json;
+                        sentry_task.complete(sent_res);
                         self.publishResult(sentry_task);
                     }
                     else {
                         if(state.concatenated==undefined){
                             state.concatenated = json;
+                            state.sentry = sentry_task;
+                            state.concatenated.result["__response"] = state.concatenated;
+                            console.log(json);
                             delete state.concatenated.metadata.pagination;
                         } else {
                             [].push.apply(state.concatenated.result.data, json.result.data);
                         }
                         if (page_num<final_page){
-                            self.loadPage(page_num+1,unforked_key,d_call,fetch_args,state);
+                            self.loadPage(page_num+1,unforked_key,d_call,fetch_args,pageRange,state);
                         } else {
-                            state.concatenated.result["__response"] = json;
-                            sentry_task.complete(state.concatenated.result);
-                            self.publishResult(sentry_task);
+                            state.sentry.complete(state.concatenated.result);
+                            self.publishResult(state.sentry);
                         }
                     }
                 }
