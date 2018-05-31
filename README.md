@@ -7,6 +7,8 @@
 
 ### Usage
 
+##### Uses BrAPI v1.2
+
 First, create a PedigreeViewer object:
 ```js
 var server = "https://brapi.myserver.org/brapi/v1", //REQUIRED, brapi root url, NO trailing slash.
@@ -29,7 +31,6 @@ pdg.newTree(initial_germplasm, function(){
 ```
 
 ### Requirements
-- Implementation of the [upcoming "progeny" BrAPI call](https://github.com/plantbreeding/API/issues/151)
 - [@solgenomics/brapijs](https://github.com/solgenomics/BrAPI.js)
 - [D3.js](https://github.com/d3/d3) (v4)
 - [d3-pedigree-tree](https://github.com/solgenomics/d3-pedigree-tree)
