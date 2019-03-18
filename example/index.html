@@ -75,15 +75,70 @@
         }
         var main_url = base_url;
         base_url+="brapi/v1";
-        var pdg = PedigreeViewer(base_url,auth,function(dbId){
+        var pdg = PedigreeViewer(BrAPI(base_url,auth),function(dbId){
             return main_url+"stock/"+dbId+"/view";
         });
-        pdg.newTree(form.germplasm,function(){
+        pdg.newTree(form.germplasm).then(function(){
             $("#load-spin").hide();
-            pdg.drawViewer("#pdgv-wrap",800,400);
         });
+
+        pdg.drawViewer("#pdgv-wrap",800,400);
+        
+        pdg.data(function(germplasmDbId){
+            return [
+                {name:"germplasmDbId",values:[
+                    {value:germplasmDbId,color:"#ffb3ba"}
+                ]}
+             ];
+         });
+        
+        // var mkrs = [
+        //     {value:"A",color:"#ffb3ba"},
+        //     {value:"T",color:"#baffc9"},
+        //     {value:"G",color:"#bae1ff"},
+        //     {value:"C",color:"#ffffba"}
+        // ];
+        // 
+        // var rfs = [
+        //     {value:"REF",color:"#EEE"},
+        //     {value:"VAR",color:"#999"}
+        // ];
+        // 
+        // console.log([
+        //     {name:"Marker:4:12202:REF",values:[
+        //         randCh(rfs)
+        //     ]},
+        //     {name:"Marker:3:04993:GT",values:[
+        //         randCh(mkrs),
+        //         randCh(mkrs)
+        //     ]},
+        //     {name:"Marker:3:05002:GT",values:[
+        //         randCh(mkrs)
+        //     ]}
+        //  ])
+        // 
+        // pdg.data(function(germplasmDbId){
+        //     return [
+        //         {name:"Marker:4:12202:REF",values:[
+        //             randCh(rfs)
+        //         ]},
+        //         {name:"Marker:3:04993:GT",values:[
+        //             randCh(mkrs),
+        //             randCh(mkrs)
+        //         ]},
+        //         {name:"Marker:3:05002:GT",values:[
+        //             randCh(mkrs)
+        //         ]}
+        //      ];
+        //  });
+        // 
+        //  function randCh(arr){
+        //      return arr[Math.floor(Math.random()*arr.length)]
+        //  }
+        
         return false;
     });
+
     });
     })();
     </script>
