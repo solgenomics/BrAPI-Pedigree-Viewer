@@ -111,7 +111,7 @@ pdg.data(function(germplasmDbId){
 
 ## Requirements
 - [@solgenomics/brapijs](https://github.com/solgenomics/BrAPI.js) (Peer Requirement)
-- [D3.js](https://github.com/d3/d3) (v4)
+- [D3.js](https://github.com/d3/d3) (v4) (Peer Requirement, expected to be in scope)
 - [d3-pedigree-tree](https://github.com/solgenomics/d3-pedigree-tree)
 #### Requirements for the Example
 - [@solgenomics/brapp-wrapper](https://github.com/solgenomics/BrApp-Wrapper) (For building the example.)

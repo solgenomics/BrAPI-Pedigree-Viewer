@@ -25,7 +25,8 @@
     "@solgenomics/brapp-wrapper": "^1.1.0"
   },
   "peerDependencies": {
-    "@solgenomics/brapijs": "^0.3.6"
+    "@solgenomics/brapijs": "^0.3.6",
+    "d3": "^4.11.0"
   },
   "brapp": {
     "out": "example/index.html",
