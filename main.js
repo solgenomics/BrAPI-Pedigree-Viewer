@@ -1,6 +1,7 @@
 
-    export default function PedigreeViewer(brapijs,urlFunc){
+    export default function PedigreeViewer(server,auth,version,urlFunc){
         var pdgv = {};
+        var brapijs = BrAPI(server,version,auth);
         var root = null;
         var access_token = null;
         var loaded_nodes = {};
@@ -23,37 +24,35 @@
             root = stock_id;
             loaded_nodes = {};
             var all_nodes = [];
-            newTreeLoading = new Promise((res,rej)=>{
-                function load_node_and_all_ancestors(ids){
-                    load_nodes(ids, function(nodes){
-                        [].push.apply(all_nodes,nodes);
-                        var mothers = nodes.map(function(d){return d.mother_id});
-                        var fathers = nodes.map(function(d){return d.father_id});
-                        var parents = mothers.concat(fathers).filter(function(d, index, self){
-                            return d!==undefined &&
-                                   d!==null &&
-                                   loaded_nodes[d]===undefined &&
-                                   self.indexOf(d) === index;
-                        });
-                        if (parents.length>0){
-                            load_node_and_all_ancestors(parents);
-                        }
-                        else {
-                            createNewTree(all_nodes);
-                            res(pdgv);
-                        }
+            var levels =0;
+            var number_ancestors =1;
+            load_node_and_all_ancestors([stock_id]);
+            function load_node_and_all_ancestors(ids){
+                load_nodes(ids, function(nodes){
+                    [].push.apply(all_nodes,nodes);
+                    var mothers = nodes.map(function(d){return d.mother_id});
+                    var fathers = nodes.map(function(d){return d.father_id});
+                    var parents = mothers.concat(fathers).filter(function(d, index, self){
+                        return d!==undefined &&
+                               d!==null &&
+                               loaded_nodes[d]===undefined &&
+                               self.indexOf(d) === index;
                     });
-                }
-                load_node_and_all_ancestors([stock_id]);
-            })
-            return newTreeLoading;
+                    if (parents.length>0 && levels < number_ancestors){
+                        load_node_and_all_ancestors(parents);
+                        levels++;
+                    }
+                    else {
+                        createNewTree(all_nodes);
+                        callback.call(pdgv);
+                    }
+                });
+            }
         };
         
         pdgv.drawViewer = function(loc,draw_width,draw_height){
-            newTreeLoading.then(()=>{
-                locationSelector = loc
-                drawTree(undefined,draw_width,draw_height);
-            });
+            locationSelector = loc
+            drawTree(undefined,draw_width,draw_height);
         }
         
         pdgv.data = function(accessor){
