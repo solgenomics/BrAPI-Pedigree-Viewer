@@ -1,7 +1,7 @@
 
-    export default function PedigreeViewer(server,auth,version,urlFunc){
+    export default function PedigreeViewer(server,auth,version,urlFunc,credentials){
         var pdgv = {};
-        var brapijs = BrAPI(server,version,auth);
+        var brapijs = BrAPI(server,version,auth,undefined,credentials);
         var root = null;
         var access_token = null;
         var loaded_nodes = {};
