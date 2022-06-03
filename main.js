@@ -35,6 +35,7 @@
                     var parents = mothers.concat(fathers).filter(function(d, index, self){
                         return d!==undefined &&
                                d!==null &&
+                               d.trim().length > 0 &&
                                loaded_nodes[d]===undefined &&
                                self.indexOf(d) === index;
                     });
