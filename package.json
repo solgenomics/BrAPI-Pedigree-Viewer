@@ -19,15 +19,15 @@
   },
   "homepage": "https://github.com/solgenomics/BrAPI-Pedigree-Viewer#readme",
   "dependencies": {
-    "@solgenomics/brapijs": "git+https://github.com/Breeding-Insight/BrAPI-js#db619b03de55d05f9923ac0f19b57e0c0e9a60b9",
+    "@solgenomics/brapijs": "git+https://github.com/Breeding-Insight/BrAPI-js#b447b23dcf8ecbc14f5bce0e6547e92544e41e56",
     "@solgenomics/d3-pedigree-tree": "git+https://github.com/solgenomics/d3-pedigree-tree#f799b499c8019cfccd550d4297196e365c208d5c"
   },
   "devDependencies": {
     "@solgenomics/brapp-wrapper": "^1.1.0"
   },
   "peerDependencies": {
-    "@solgenomics/brapijs": "git+https://github.com/Breeding-Insight/BrAPI-js#db619b03de55d05f9923ac0f19b57e0c0e9a60b9",
-    "d3": "7.4.4"
+    "@solgenomics/brapijs": "git+https://github.com/Breeding-Insight/BrAPI-js#b447b23dcf8ecbc14f5bce0e6547e92544e41e56",
+    "d3": "^4.11.0"
   },
   "brapp": {
     "out": "example/index.html",
