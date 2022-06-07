@@ -1,7 +1,28 @@
 
-    export default function PedigreeViewer(server,auth,version,urlFunc,credentials){
+    export default function PedigreeViewer(server,auth,version,urlFunc,options){
+        const additionalOptions = Object.assign({}, {
+            credentials: 'same-site',
+            urlTarget: '_blank',
+            nodeNameFn: function(d) {
+                return d.value.name;
+            },
+            textSize: "14",
+            textFont: "sans-serif",
+            numAncestors: 1,
+            treeNodePadding:220,
+            treeLevelPadding:200,
+            arrowRight: function() {
+                return "&#xe092;";
+            },
+            arrowUp: function() {
+                return "&#xe093;";
+            },
+            arrowDown: function() {
+                return "&#xe094;";
+            },
+        }, options);
         var pdgv = {};
-        var brapijs = BrAPI(server,version,auth,undefined,credentials);
+        var brapijs = BrAPI(server,version,auth,undefined,additionalOptions.credentials);
         var root = null;
         var access_token = null;
         var loaded_nodes = {};
@@ -10,12 +31,12 @@
         var newTreeLoading = null;
         var load_markers = function(){return []};
         var marker_data = {};
-        var getTextSize = TextSizer("14","sans-serif");
+        var getTextSize = TextSizer(additionalOptions.textSize, additionalOptions.textFont);
         
-        var tree_node_padding_default = 220;
+        var tree_node_padding_default = additionalOptions.treeNodePadding;
         var tree_node_padding = tree_node_padding_default;
         
-        var tree_level_padding_default = 200;
+        var tree_level_padding_default = additionalOptions.treeLevelPadding;
         var tree_level_padding = tree_level_padding_default;
         
         urlFunc = urlFunc!=undefined?urlFunc:function(){return null};
@@ -25,7 +46,7 @@
             loaded_nodes = {};
             var all_nodes = [];
             var levels =0;
-            var number_ancestors =1;
+            var number_ancestors = additionalOptions.numAncestors;
             load_node_and_all_ancestors([stock_id]);
             function load_node_and_all_ancestors(ids){
                 load_nodes(ids, function(nodes){
@@ -317,7 +338,7 @@
               .attr("font-weight","bold")
               .attr('text-anchor',"middle")
               .attr('class', 'glyphicon')
-              .html("&#xe092;")
+              .html(additionalOptions.arrowRight())
               .attr('fill',"white");
             //create expander handles on nodes
             var expanders = nodeNodes.append('g').classed("expanders",true);
@@ -337,11 +358,11 @@
               .style("cursor","pointer")
               .attr('y',52)
               .attr('x',-0.5)
-              .attr("font-size","14px")
+              .attr("font-size",additionalOptions.textFont+"px")
               .attr("font-weight","bold")
               .attr('text-anchor',"middle")
               .attr('class', 'glyphicon')
-              .html("&#xe094;")
+              .html(additionalOptions.arrowDown())
               .attr('fill',"white");
             child_expander.on("click",function(d){
               d3.select(this).on('click',null);
@@ -369,11 +390,11 @@
               .style("cursor","pointer")
               .attr('y',-39)
               .attr('x',-0.5)
-              .attr("font-size","14px")
+              .attr("font-size",additionalOptions.textFont+"px")
               .attr("font-weight","bold")
               .attr('text-anchor',"middle")
               .attr('class', 'glyphicon')
-              .html("&#xe093;")
+              .html(additionalOptions.arrowUp())
               .attr('fill',"white");
             parent_expander.on("click",function(d){
               d3.select(this).on('click',null);
@@ -418,12 +439,12 @@
                 .attr('href',function(d){
                   return urlFunc(d.id);
                 })
-                .attr('target','_blank')
+                .attr('target',additionalOptions.urlTarget)
                 .append('text').classed('node-name-text',true)
                 .attr('y',15)
                 .attr('text-anchor',"middle")
                 .text(function(d){
-                  return d.value.name;
+                  return additionalOptions.nodeNameFn(d);
                 })
                 .attr('fill',"black");
               nodeNodes.filter(function(d){return d.url===undefined;})
@@ -431,7 +452,7 @@
                 .attr('y',15)
                 .attr('text-anchor',"middle")
                 .text(function(d){
-                  return d.value.name;
+                    return additionalOptions.nodeNameFn(d);
                 })
                 .attr('fill',"black");
             
