@@ -21,6 +21,25 @@ Use the following snippets (in order) to fully set up a tree.
       //OPTIONAL a function which returns a link to a germplasm information page, returning null will create a node without a link.
       function(germplasmDbId){ 
           return "https://brapi.myserver.org/germ/"+germplasmDbId+".html";
+      },
+      //OPTIONAL additional configuration options
+      {
+        credentials: 'same-site', //see https://developer.mozilla.org/en-US/docs/Web/API/Request/credentials for options
+        urlTarget: '_blank', //see https://developer.mozilla.org/en-US/docs/Web/HTML/Element/a#attr-target for options
+        nodeNameFn: function(d) { // allows for customization of the name displayed on a pedigree node
+            return d.value.name;
+        },
+        textSize: "14",
+        textFont: "sans-serif",
+        arrowRight: function() { //resolve the right arrow display
+            return "&#xe092;";
+        },
+        arrowUp: function() { //resolve the up arrow display
+            return "&#xe093;";
+        },
+        arrowDown: function() { //resolve the down arrow display
+            return "&#xe094;";
+        },
       }
     );
     ```
