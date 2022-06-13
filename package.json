@@ -25,7 +25,7 @@
     "@solgenomics/brapp-wrapper": "^1.1.0"
   },
   "peerDependencies": {
-    "@solgenomics/brapijs": "git+https://github.com/Breeding-Insight/BrAPI-js#b447b23dcf8ecbc14f5bce0e6547e92544e41e56",
+    "@solgenomics/brapijs": "git+https://github.com/Breeding-Insight/BrAPI-js#v2.0.2",
     "d3": "^4.11.0"
   },
   "brapp": {
