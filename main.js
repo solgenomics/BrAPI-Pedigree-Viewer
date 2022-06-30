@@ -454,90 +454,77 @@
         }
 
         function generateNodesHTML(root, nodes, options) {
+            const highlightThickness = 5;
+            const textMarginVertical = 5;
+            const textMarginHorizontal = 10;
 
-            // TODO: Do a foreach and make this individual. This has a ton of repeat computations
-            const getTextAsArray = function(d) {
-                var nameObject = options.nodeNameFn(d);
-                return typeof nameObject === 'string' ? [nameObject] : nameObject;
-            }
-            const nodeShapeHeight = function(d) {
-                const textArray = getTextAsArray(d);
+            nodes.each(function(d) {
+                var node = d3.select(this);
+
+                // Get text input as array
+                const nameObject = options.nodeNameFn(d);
+                const textAsArray = typeof nameObject === 'string' ? [nameObject] : nameObject;
+
+                // Find the total height and max width of the text
                 var totalHeight = 0;
-                for (const line of textArray) {
-                    totalHeight += getTextSize(line).fontBoundingBoxAscent;
+                var maxWidth = 0;
+                textAsArray.forEach(function(line) {
+                    const textSize = getTextSize(line);
+                    totalHeight += textSize.fontBoundingBoxAscent;
+                    maxWidth = textSize.width > maxWidth ? textSize.width : maxWidth;
+                });
+                const nodeShapeHeight = totalHeight + (textMarginVertical * 2);
+                const nodeShapeWidth = maxWidth + (textMarginHorizontal * 2);
+
+                const highlightHeight = nodeShapeHeight + (highlightThickness * 2);
+                const highlightWidth = nodeShapeWidth + (highlightThickness * 2);
+
+                // Node Highlight
+                nodes.append('rect').classed("node-name-highlight",true)
+                  .attr('fill',function(d){
+                      return d.id==root?"pink":"none";
+                  })
+                  .attr('stroke-width',0)
+                  .attr("width",highlightWidth)
+                  .attr("height", highlightHeight)
+                  .attr("y",-(highlightThickness))
+                  .attr("rx",15)
+                  .attr("ry",15)
+                  .attr("x",-(highlightWidth/2));
+
+                // Node shape
+                nodes.append('rect').classed("node-name-wrapper",true)
+                  .attr('fill',"white")
+                  .attr('stroke',"grey")
+                  .attr('stroke-width',2)
+                  .attr("width",nodeShapeWidth)
+                  .attr("height", nodeShapeHeight)
+                  .attr("y",0)
+                  .attr("rx",10)
+                  .attr("ry",10)
+                  .attr("x",-(nodeShapeWidth/2));
+
+                // Href
+                const url = options.urlFunc(d.id);
+                if (url != null) {
+                    node.append('a')
+                      .attr('href', url)
+                      .attr('target', options.urlTarget);
                 }
-                return totalHeight + additionalOptions.textMargin * 2;
-            };
-            const highlightHeight = function(d) { return nodeShapeHeight(d) + (constants.nodeDetails.highlightExtend * 2)};
-            const textY = function(d, index) {
-                const textArray = getTextAsArray(d);
-                return (getTextSize(textArray[index]).fontBoundingBoxAscent / 2) * (parseInt(index) + 1) * 2;
-            }
 
-            // Node Highlight
-            nodes.append('rect').classed("node-name-highlight",true)
-              .attr('fill',function(d){
-                  return d.id==root?"pink":"none";
-              })
-              .attr('stroke-width',0)
-              .attr("width",220)
-              .attr("height", highlightHeight)
-              .attr("y",function(d) { return constants.nodeDetails.highlightExtend * -1})
-              .attr("rx",15)
-              .attr("ry",15)
-              .attr("x",-105);
-
-            // Node shape
-            nodes.append('rect').classed("node-name-wrapper",true)
-              .attr('fill',"white")
-              .attr('stroke',"grey")
-              .attr('stroke-width',2)
-              .attr("width",200)
-              .attr("height", nodeShapeHeight)
-              .attr("y",0)
-              .attr("rx",10)
-              .attr("ry",10)
-              .attr("x",-100);
-
-            // Href
-            nodes.filter(function(d) {return options.urlFunc(d.id) != null})
-              .append('a')
-              .attr('href', function(d) { return options.urlFunc(d.id)})
-              .attr('target', options.urlTarget);
-
-            // Node contents
-            nodes.each(function (d) {
-                var nodeInner = d3.select(this);
-                const textArray = getTextAsArray(d);
-
-                for (const index in textArray) {
-                    nodeInner.append('text').classed('node-name-text',true)
-                      .attr('y', textY(d, index))
+                // Node contents
+                for (const index in textAsArray) {
+                    const textY = getTextSize(textAsArray[index]).fontBoundingBoxAscent * (parseInt(index) + 1);
+                    node.append('text').classed('node-name-text',true)
+                      .attr('y', textY)
                       .attr('text-anchor',"middle")
                       .attr('font-size', additionalOptions.textSize)
-                      .text(textArray[index])
+                      .text(textAsArray[index])
                       .attr('fill',"black");
                 }
-            });
 
-            // Set node width to text width
-            nodes.each(function(d){
-                var nn = d3.select(this);
-                var textElements = nn.selectAll('.node-name-text');
-                var max = 0;
-                textElements.each(function(d) {
-                    var textBox = d3.select(this);
-                    var textWidth = textBox.node().getComputedTextLength();
-                    max = textWidth > max ? textWidth : max;
-                })
-                var w = max+20;
-                nn.select('.node-name-wrapper')
-                  .attr("width",w)
-                  .attr("x",-w/2);
-                nn.select('.node-name-highlight')
-                  .attr("width",w+10)
-                  .attr("x",-(w+10)/2);
-                nn.select('.marker_group').attr("transform",`translate(${w/2},0)`)
+                // Adjust marker group
+                node.select('.marker_group').attr("transform",`translate(${nodeShapeWidth/2},0)`)
             });
         }
 
@@ -618,6 +605,7 @@
             const lineWidth = 4;
             const transitionDuration = 700;
 
+
             var child_expanders = expanders.append("g").classed("child-expander",true);
             nodes.each(function() {
 
@@ -664,23 +652,31 @@
         }
 
         function generateParentExpanders(layout, expanders) {
+            const iconGap = 30;
+            const circleRadius = 10;
+            const pointerSize = 20;
+            const lineWidth = 4;
+            const transitionDuration = 700;
+            const iconY = -(iconGap);
+            const pointerY = iconY + circleRadius/2;
+
             var parent_expander = expanders.append("g").classed("parent-expander",true)
             parent_expander.append("path")
               .attr("fill","none")
               .attr("stroke","purple")
-              .attr("stroke-width",4)
+              .attr("stroke-width",lineWidth)
               .attr("d",curveline([[0,0],[0,-40]]));
             parent_expander.append("circle")
               .style("cursor","pointer")
               .attr("fill","purple")
               .attr("stroke","purple")
-              .attr("cy",-45)
-              .attr("r",10);
+              .attr("cy",iconY)
+              .attr("r",circleRadius);
             parent_expander.append('text')
               .style("cursor","pointer")
-              .attr('y',-39)
+              .attr('y',pointerY)
               .attr('x',-0.5)
-              .attr("font-size",additionalOptions.textFont+"px")
+              .attr("font-size",pointerSize+"px")
               .attr("font-weight","bold")
               .attr('text-anchor',"middle")
               .attr('class', 'glyphicon')
@@ -693,7 +689,7 @@
                 load_nodes(to_load,function(nodes){
                     end_blink();
                     layout.pdgtree.add(nodes);
-                    drawTree(d3.transition().duration(700));
+                    drawTree(d3.transition().duration(transitionDuration));
                 });
             });
         }
