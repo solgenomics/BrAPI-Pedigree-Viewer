@@ -217,7 +217,6 @@
         }
         
         function drawTree(trans,draw_width,draw_height){
-            console.log("redraw");
             if(!myTree) return;
             var layout = myTree();
                         
@@ -298,7 +297,6 @@
             
             
             //set up draw layers
-            // TODO: Can we set up child selector layers in here?
             var linkLayer = content.select('.link-layer');
             if(linkLayer.empty()){
                 linkLayer = content.append('g').classed('link-layer',true);
@@ -350,7 +348,6 @@
             generateNodesHTML(root, nodeNodes, additionalOptions);
 
             //create expander handles on nodes
-            // TODO: Need to draw these before, but need the
             generateChildExpanders(layout, nodeNodes, expanders);
             generateParentExpanders(layout, expanders);
 
@@ -390,7 +387,6 @@
                 .attr("y",10);
             var allmks = newmks.merge(mks);
             allmks.attr("transform",(d,i)=>`translate(15,${i*25})`)
-            console.log(marker_data);
             allmks.select(".marker-bg").attr("width",d=>marker_data.__widths[0]);
             allmks.select("text")
                 .attr("x",d=>marker_data.__widths[0]/2)
@@ -480,7 +476,7 @@
                 const highlightWidth = nodeShapeWidth + (highlightThickness * 2);
 
                 // Node Highlight
-                nodes.append('rect').classed("node-name-highlight",true)
+                node.append('rect').classed("node-name-highlight",true)
                   .attr('fill',function(d){
                       return d.id==root?"pink":"none";
                   })
@@ -493,7 +489,7 @@
                   .attr("x",-(highlightWidth/2));
 
                 // Node shape
-                nodes.append('rect').classed("node-name-wrapper",true)
+                node.append('rect').classed("node-name-wrapper",true)
                   .attr('fill',"white")
                   .attr('stroke',"grey")
                   .attr('stroke-width',2)
@@ -640,9 +636,9 @@
                     d3.select(this).on('click',null);
                     var end_blink = load_blink(d3.select(this).select("circle").node());
                     var to_load = d.value.children.filter(Boolean).map(String);
-                    load_nodes(to_load,function(nodes){
+                    load_nodes(to_load,function(newNodes){
                         end_blink();
-                        layout.pdgtree.add(nodes);
+                        layout.pdgtree.add(newNodes);
                         drawTree(d3.transition().duration(transitionDuration));
                     });
                 });
@@ -686,9 +682,9 @@
                 d3.select(this).on('click',null);
                 var end_blink = load_blink(d3.select(this).select("circle").node());
                 var to_load = [d.value.mother_id,d.value.father_id].filter(Boolean).map(String);
-                load_nodes(to_load,function(nodes){
+                load_nodes(to_load,function(newNodes){
                     end_blink();
-                    layout.pdgtree.add(nodes);
+                    layout.pdgtree.add(newNodes);
                     drawTree(d3.transition().duration(transitionDuration));
                 });
             });
