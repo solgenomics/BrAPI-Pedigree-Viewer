@@ -8,6 +8,7 @@
             },
             textSize: "14",
             textFont: "sans-serif",
+            textMargin: 5,
             numAncestors: 1,
             treeNodePadding:220,
             treeLevelPadding:200,
@@ -20,7 +21,13 @@
             arrowDown: function() {
                 return "&#xe094;";
             },
+            urlFunc: urlFunc!=undefined ? urlFunc : function(){return null},
         }, options);
+        const constants = {
+            nodeDetails: {
+                highlightExtend: 5
+            }
+        }
         var pdgv = {};
         var brapijs = BrAPI(server,version,auth,undefined,additionalOptions.credentials);
         var root = null;
@@ -38,8 +45,10 @@
         
         var tree_level_padding_default = additionalOptions.treeLevelPadding;
         var tree_level_padding = tree_level_padding_default;
-        
-        urlFunc = urlFunc!=undefined?urlFunc:function(){return null};
+
+        //link curve generators
+        var stepline = d3.line().curve(d3.curveStepAfter);
+        var curveline = d3.line().curve(d3.curveBasis);
                 
         pdgv.newTree = function(stock_id,callback){
             root = stock_id;
@@ -89,14 +98,14 @@
                 marker_val.then((md)=>{
                     marker_data[germplasmID] = md;
                     md.forEach(mv=>{
-                        widths[0] = Math.max(widths[0]||0,getTextSize(mv.name)+10);
+                        widths[0] = Math.max(widths[0]||0,getTextSize(mv.name).width+10);
                         mv.values.forEach((v,i)=>{
                             if(v.value.length<2){
                                 widths[i+1] = Math.max(widths[i+1]||0,22);
                                 return 
                             }
                             else{
-                                widths[i+1] = Math.max(widths[i+1]||0,getTextSize(v.value)+10);
+                                widths[i+1] = Math.max(widths[i+1]||0,getTextSize(v.value).width+10);
                             }
                         })
                         if(widths[0]){
@@ -289,6 +298,7 @@
             
             
             //set up draw layers
+            // TODO: Can we set up child selector layers in here?
             var linkLayer = content.select('.link-layer');
             if(linkLayer.empty()){
                 linkLayer = content.append('g').classed('link-layer',true);
@@ -297,14 +307,6 @@
             if(nodeLayer.empty()){
                 nodeLayer = content.append('g').classed('node-layer',true);
             }
-            
-            //link curve generators
-            var stepline = d3.line().curve(d3.curveStepAfter);
-            var curveline = d3.line().curve(d3.curveBasis);
-            var build_curve = function(d){
-              if (d.type=="parent->mid") return curveline(d.path);
-              if (d.type=="mid->child") return stepline(d.path);
-            };
             
             //draw nodes
             var nodes = nodeLayer.selectAll('.node')
@@ -324,6 +326,7 @@
             var groupNodes = newNodes.filter(function(d){
                 return d.type=="node-group";
             });
+
             //draw node group expanders
             groupNodes.append("circle")
               .style("cursor","pointer")
@@ -340,148 +343,24 @@
               .attr('class', 'glyphicon')
               .html(additionalOptions.arrowRight())
               .attr('fill',"white");
-            //create expander handles on nodes
+
             var expanders = nodeNodes.append('g').classed("expanders",true);
-            var child_expander = expanders.append("g").classed("child-expander",true)
-            child_expander.append("path")
-              .attr("fill","none")
-              .attr("stroke","purple")
-              .attr("stroke-width",4)
-              .attr("d",curveline([[0,20],[0,40]]));
-            child_expander.append("circle")
-              .style("cursor","pointer")
-              .attr("fill","purple")
-              .attr("stroke","purple")
-              .attr("cy",45)
-              .attr("r",10);
-            child_expander.append('text')
-              .style("cursor","pointer")
-              .attr('y',52)
-              .attr('x',-0.5)
-              .attr("font-size",additionalOptions.textFont+"px")
-              .attr("font-weight","bold")
-              .attr('text-anchor',"middle")
-              .attr('class', 'glyphicon')
-              .html(additionalOptions.arrowDown())
-              .attr('fill',"white");
-            child_expander.on("click",function(d){
-              d3.select(this).on('click',null);
-              var end_blink = load_blink(d3.select(this).select("circle").node());
-              var to_load = d.value.children.filter(Boolean).map(String);
-              load_nodes(to_load,function(nodes){
-                  end_blink();
-                  layout.pdgtree.add(nodes);
-                  drawTree(d3.transition().duration(700));
-              });
-            });
-            var parent_expander = expanders.append("g").classed("parent-expander",true)
-            parent_expander.append("path")
-              .attr("fill","none")
-              .attr("stroke","purple")
-              .attr("stroke-width",4)
-              .attr("d",curveline([[0,0],[0,-40]]));
-            parent_expander.append("circle")
-              .style("cursor","pointer")
-              .attr("fill","purple")
-              .attr("stroke","purple")
-              .attr("cy",-45)
-              .attr("r",10);
-            parent_expander.append('text')
-              .style("cursor","pointer")
-              .attr('y',-39)
-              .attr('x',-0.5)
-              .attr("font-size",additionalOptions.textFont+"px")
-              .attr("font-weight","bold")
-              .attr('text-anchor',"middle")
-              .attr('class', 'glyphicon')
-              .html(additionalOptions.arrowUp())
-              .attr('fill',"white");
-            parent_expander.on("click",function(d){
-              d3.select(this).on('click',null);
-              var end_blink = load_blink(d3.select(this).select("circle").node());
-              var to_load = [d.value.mother_id,d.value.father_id].filter(Boolean).map(String);
-              load_nodes(to_load,function(nodes){
-                  end_blink();
-                  layout.pdgtree.add(nodes);
-                  drawTree(d3.transition().duration(700));
-              });
-            });
-            nodeNodes.append('rect').classed("node-name-highlight",true)
-              .attr('fill',function(d){
-                  return d.id==root?"pink":"none";
-              })
-              .attr('stroke-width',0)
-              .attr("width",220)
-              .attr("height",30)
-              .attr("y",-5)
-              .attr("rx",15)
-              .attr("ry",15)
-              .attr("x",-105);
-            nodeNodes.append('rect').classed("node-name-wrapper",true)
-              .attr('fill',"white")
-              .attr('stroke',"grey")
-              .attr('stroke-width',2)
-              .attr("width",200)
-              .attr("height",20)
-              .attr("y",0)
-              .attr("rx",10)
-              .attr("ry",10)
-              .attr("x",-100);
-              var nodeUrlLinks = nodeNodes.filter(function(d){
-                  var url = urlFunc(d.id);
-                  if (url!==null){
-                    d.url = url;
-                    return true;
-                  }
-                  return false;
-                })
-                .append('a')
-                .attr('href',function(d){
-                  return urlFunc(d.id);
-                })
-                .attr('target',additionalOptions.urlTarget)
-                .append('text').classed('node-name-text',true)
-                .attr('y',15)
-                .attr('text-anchor',"middle")
-                .text(function(d){
-                  return additionalOptions.nodeNameFn(d);
-                })
-                .attr('fill',"black");
-              nodeNodes.filter(function(d){return d.url===undefined;})
-                .append('text').classed('node-name-text',true)
-                .attr('y',15)
-                .attr('text-anchor',"middle")
-                .text(function(d){
-                    return additionalOptions.nodeNameFn(d);
-                })
-                .attr('fill',"black");
-            
-            //create marker_groups on nodes
-            nodeNodes.append('g').classed("marker_group",true)
-                .append("rect")
-                .classed("marker-connector",true)
-                .attr('stroke',"none")
-                .attr('fill',"gray")
-                .attr("y",9)
-                .attr("x",0)
-                .attr("height",2)
-                .attr("width",20);
-                
-            //set node width to text width
-            nodeNodes.each(function(d){
-                var nn = d3.select(this);
-                var ctl = nn.select('.node-name-text').node().getComputedTextLength();
-                var w = ctl+20;
-                nn.select('.node-name-wrapper')
-                    .attr("width",w)
-                    .attr("x",-w/2);
-                nn.select('.node-name-highlight')
-                    .attr("width",w+10)
-                    .attr("x",-(w+10)/2);
-                nn.select('.marker_group').attr("transform",`translate(${w/2},0)`)
-            });
-            
-            
+
+            // Generate nodes
+            generateNodesHTML(root, nodeNodes, additionalOptions);
+
+            //create expander handles on nodes
+            // TODO: Need to draw these before, but need the
+            generateChildExpanders(layout, nodeNodes, expanders);
+            generateParentExpanders(layout, expanders);
+
+            // Create links
+            var links = linkLayer.selectAll('.link')
+              .data(layout.links,function(d){return d.id;});
+            generateLinks(links, trans);
+
+            // Create marker_groups on nodes
+            generateNodeMarkerConnectors(nodeNodes, additionalOptions);
             
             var allNodes = newNodes.merge(nodes);
             
@@ -572,49 +451,251 @@
                 drawTree(d3.transition().duration(700).ease(d3.easeLinear));
             });
             var oldNodes = nodes.exit().remove();
+        }
 
-            
+        function generateNodesHTML(root, nodes, options) {
+
+            // TODO: Do a foreach and make this individual. This has a ton of repeat computations
+            const getTextAsArray = function(d) {
+                var nameObject = options.nodeNameFn(d);
+                return typeof nameObject === 'string' ? [nameObject] : nameObject;
+            }
+            const nodeShapeHeight = function(d) {
+                const textArray = getTextAsArray(d);
+                var totalHeight = 0;
+                for (const line of textArray) {
+                    totalHeight += getTextSize(line).fontBoundingBoxAscent;
+                }
+                return totalHeight + additionalOptions.textMargin * 2;
+            };
+            const highlightHeight = function(d) { return nodeShapeHeight(d) + (constants.nodeDetails.highlightExtend * 2)};
+            const textY = function(d, index) {
+                const textArray = getTextAsArray(d);
+                return (getTextSize(textArray[index]).fontBoundingBoxAscent / 2) * (parseInt(index) + 1) * 2;
+            }
+
+            // Node Highlight
+            nodes.append('rect').classed("node-name-highlight",true)
+              .attr('fill',function(d){
+                  return d.id==root?"pink":"none";
+              })
+              .attr('stroke-width',0)
+              .attr("width",220)
+              .attr("height", highlightHeight)
+              .attr("y",function(d) { return constants.nodeDetails.highlightExtend * -1})
+              .attr("rx",15)
+              .attr("ry",15)
+              .attr("x",-105);
+
+            // Node shape
+            nodes.append('rect').classed("node-name-wrapper",true)
+              .attr('fill',"white")
+              .attr('stroke',"grey")
+              .attr('stroke-width',2)
+              .attr("width",200)
+              .attr("height", nodeShapeHeight)
+              .attr("y",0)
+              .attr("rx",10)
+              .attr("ry",10)
+              .attr("x",-100);
+
+            // Href
+            nodes.filter(function(d) {return options.urlFunc(d.id) != null})
+              .append('a')
+              .attr('href', function(d) { return options.urlFunc(d.id)})
+              .attr('target', options.urlTarget);
+
+            // Node contents
+            nodes.each(function (d) {
+                var nodeInner = d3.select(this);
+                const textArray = getTextAsArray(d);
+
+                for (const index in textArray) {
+                    nodeInner.append('text').classed('node-name-text',true)
+                      .attr('y', textY(d, index))
+                      .attr('text-anchor',"middle")
+                      .attr('font-size', additionalOptions.textSize)
+                      .text(textArray[index])
+                      .attr('fill',"black");
+                }
+            });
+
+            // Set node width to text width
+            nodes.each(function(d){
+                var nn = d3.select(this);
+                var textElements = nn.selectAll('.node-name-text');
+                var max = 0;
+                textElements.each(function(d) {
+                    var textBox = d3.select(this);
+                    var textWidth = textBox.node().getComputedTextLength();
+                    max = textWidth > max ? textWidth : max;
+                })
+                var w = max+20;
+                nn.select('.node-name-wrapper')
+                  .attr("width",w)
+                  .attr("x",-w/2);
+                nn.select('.node-name-highlight')
+                  .attr("width",w+10)
+                  .attr("x",-(w+10)/2);
+                nn.select('.marker_group').attr("transform",`translate(${w/2},0)`)
+            });
+        }
+
+        function generateNodeMarkerConnectors(nodes) {
+
+            // TODO: Check where this is supposed to be
+            nodes.each(function(data) {
+                const node = d3.select(this);
+                // Get the node height
+                const nodeHeight = node.select('.node-name-highlight').attr('height');
+                const nodeMargin = 9;
+
+                node.append('g').classed("marker_group",true)
+                  .append("rect")
+                  .classed("marker-connector",true)
+                  .attr('stroke',"none")
+                  .attr('fill',"gray")
+                  .attr("y", 9)
+                  .attr("x",0)
+                  .attr("height",2)
+                  .attr("width",20);
+            })
+        }
+
+        function generateLinks(links, trans) {
+
             //link colors
             var link_color = function(d){
-              if (d.type=="mid->child") return 'purple';
-              if (d.type=="parent->mid"){
-                //if its the first parent, red. Otherwise, blue.
-                var representative = d.sinks[0].type=="node-group"?
-                        d.sinks[0].value[0].value 
-                        : d.sinks[0].value;
-                if (representative.mother_id == d.source.id){
-                    return "red";
-                } 
-                else {
-                    return "blue";
+                if (d.type=="mid->child") return 'purple';
+                if (d.type=="parent->mid"){
+                    //if its the first parent, red. Otherwise, blue.
+                    var representative = d.sinks[0].type=="node-group"?
+                      d.sinks[0].value[0].value
+                      : d.sinks[0].value;
+                    if (representative.mother_id == d.source.id){
+                        return "red";
+                    }
+                    else {
+                        return "blue";
+                    }
                 }
-              }
-              return 'gray';
+                return 'gray';
             }
-            
-            //make links
-            var links = linkLayer.selectAll('.link')
-              .data(layout.links,function(d){return d.id;});
+
+
+            var build_curve = function(d){
+                if (d.type=="parent->mid") return curveline(d.path);
+                if (d.type=="mid->child") return stepline(d.path);
+            };
+
             var newLinks = links.enter().append('g')
               .classed('link',true);
             newLinks.append('path')
               .attr('d',function(d){
-                var begin = (d.sink || d.source);
-                if(d3.event && d3.event.type=="click"){
-                  begin = d3.select(d3.event.target).datum();
-                }
-                return curveline([[begin.x,begin.y],[begin.x,begin.y],[begin.x,begin.y],[begin.x,begin.y]]);
+                  var begin = (d.sink || d.source);
+                  if(d3.event && d3.event.type=="click"){
+                      begin = d3.select(d3.event.target).datum();
+                  }
+                  return curveline([[begin.x,begin.y],[begin.x,begin.y],[begin.x,begin.y],[begin.x,begin.y]]);
               })
               .attr('fill','none')
               .attr('stroke',link_color)
               .attr('opacity',function(d){
-                if (d.type=="parent->mid") return 0.7;
-                return 0.999;
+                  if (d.type=="parent->mid") return 0.7;
+                  return 0.999;
               })
               .attr('stroke-width',4);
             var allLinks = newLinks.merge(links);
             allLinks.transition(trans).select('path').attr('d',build_curve);
             var oldNodes = links.exit().remove();
+        }
+
+        function generateChildExpanders(layout, nodes, expanders) {
+
+            const iconGap = 30;
+            const circleRadius = 10;
+            const pointerSize = 20;
+            const lineWidth = 4;
+            const transitionDuration = 700;
+
+            var child_expanders = expanders.append("g").classed("child-expander",true);
+            nodes.each(function() {
+
+                const expander = d3.select(this);
+                const rectHeight = expander.select('.node-name-wrapper').attr('height');
+                const iconY = parseInt(rectHeight) + iconGap;
+                const pointerY = iconY + circleRadius/2;
+
+                var child_expander = expander.select(".child-expander");
+                child_expander.append("path")
+                  .attr("fill","none")
+                  .attr("stroke","purple")
+                  .attr("stroke-width",lineWidth)
+                  .attr("d",curveline([[0,20],[0,iconY]]));
+                child_expander.append("circle")
+                  .style("cursor","pointer")
+                  .attr("fill","purple")
+                  .attr("stroke","purple")
+                  .attr("cy",iconY)
+                  .attr("r",circleRadius);
+                child_expander.append('text')
+                  .style("cursor","pointer")
+                  .attr('y',pointerY)
+                  .attr('x',-0.5)
+                  .attr("font-size",pointerSize+"px")
+                  .attr("font-weight","bold")
+                  .attr('text-anchor',"middle")
+                  .attr('class', 'glyphicon')
+                  .html(additionalOptions.arrowDown())
+                  .attr('fill',"white");
+                child_expander.on("click",function(d){
+                    d3.select(this).on('click',null);
+                    var end_blink = load_blink(d3.select(this).select("circle").node());
+                    var to_load = d.value.children.filter(Boolean).map(String);
+                    load_nodes(to_load,function(nodes){
+                        end_blink();
+                        layout.pdgtree.add(nodes);
+                        drawTree(d3.transition().duration(transitionDuration));
+                    });
+                });
+            });
+            // Get size of the parent node
+
+        }
+
+        function generateParentExpanders(layout, expanders) {
+            var parent_expander = expanders.append("g").classed("parent-expander",true)
+            parent_expander.append("path")
+              .attr("fill","none")
+              .attr("stroke","purple")
+              .attr("stroke-width",4)
+              .attr("d",curveline([[0,0],[0,-40]]));
+            parent_expander.append("circle")
+              .style("cursor","pointer")
+              .attr("fill","purple")
+              .attr("stroke","purple")
+              .attr("cy",-45)
+              .attr("r",10);
+            parent_expander.append('text')
+              .style("cursor","pointer")
+              .attr('y',-39)
+              .attr('x',-0.5)
+              .attr("font-size",additionalOptions.textFont+"px")
+              .attr("font-weight","bold")
+              .attr('text-anchor',"middle")
+              .attr('class', 'glyphicon')
+              .html(additionalOptions.arrowUp())
+              .attr('fill',"white");
+            parent_expander.on("click",function(d){
+                d3.select(this).on('click',null);
+                var end_blink = load_blink(d3.select(this).select("circle").node());
+                var to_load = [d.value.mother_id,d.value.father_id].filter(Boolean).map(String);
+                load_nodes(to_load,function(nodes){
+                    end_blink();
+                    layout.pdgtree.add(nodes);
+                    drawTree(d3.transition().duration(700));
+                });
+            });
         }
         
         return pdgv;
@@ -657,6 +738,6 @@
         var context = canvas.getContext('2d');
         return function (text) {
             context.font = fontSize + 'px ' + fontFace;
-            return context.measureText(text).width;
+            return context.measureText(text);
         };
     }
