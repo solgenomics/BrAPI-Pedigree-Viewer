@@ -352,6 +352,7 @@
             generateParentExpanders(layout, expanders);
 
             // Create links
+            // TODO: Need to modify the link start
             var links = linkLayer.selectAll('.link')
               .data(layout.links,function(d){return d.id;});
             generateLinks(links, trans);
@@ -501,27 +502,34 @@
                   .attr("x",-(nodeShapeWidth/2));
 
                 // Href
-                const url = options.urlFunc(d.id);
+                const url = options.urlFunc(d.id, d);
                 if (url != null) {
-                    node.append('a')
+                    var href = node.append('a')
                       .attr('href', url)
                       .attr('target', options.urlTarget);
+                    appendText(href, textAsArray);
+                } else {
+                    appendText(node, textAsArray);
                 }
 
                 // Node contents
-                for (const index in textAsArray) {
-                    const textY = getTextSize(textAsArray[index]).fontBoundingBoxAscent * (parseInt(index) + 1);
-                    node.append('text').classed('node-name-text',true)
-                      .attr('y', textY)
-                      .attr('text-anchor',"middle")
-                      .attr('font-size', additionalOptions.textSize)
-                      .text(textAsArray[index])
-                      .attr('fill',"black");
-                }
+
 
                 // Adjust marker group
                 node.select('.marker_group').attr("transform",`translate(${nodeShapeWidth/2},0)`)
             });
+        }
+
+        function appendText(element, textAsArray) {
+            for (const index in textAsArray) {
+                const textY = getTextSize(textAsArray[index]).fontBoundingBoxAscent * (parseInt(index) + 1);
+                element.append('text').classed('node-name-text',true)
+                  .attr('y', textY)
+                  .attr('text-anchor',"middle")
+                  .attr('font-size', additionalOptions.textSize)
+                  .text(textAsArray[index])
+                  .attr('fill',"black");
+            }
         }
 
         function generateNodeMarkerConnectors(nodes) {
@@ -574,13 +582,6 @@
             var newLinks = links.enter().append('g')
               .classed('link',true);
             newLinks.append('path')
-              .attr('d',function(d){
-                  var begin = (d.sink || d.source);
-                  if(d3.event && d3.event.type=="click"){
-                      begin = d3.select(d3.event.target).datum();
-                  }
-                  return curveline([[begin.x,begin.y],[begin.x,begin.y],[begin.x,begin.y],[begin.x,begin.y]]);
-              })
               .attr('fill','none')
               .attr('stroke',link_color)
               .attr('opacity',function(d){
@@ -588,6 +589,7 @@
                   return 0.999;
               })
               .attr('stroke-width',4);
+            // Transition for the path drawing
             var allLinks = newLinks.merge(links);
             allLinks.transition(trans).select('path').attr('d',build_curve);
             var oldNodes = links.exit().remove();
