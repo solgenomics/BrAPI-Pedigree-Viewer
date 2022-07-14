@@ -4,7 +4,7 @@
             credentials: 'same-site',
             urlTarget: '_blank',
             nodeNameFn: function(d) {
-                return d.value.name;
+                return [d.value.name];
             },
             textSize: "14",
             textFont: "sans-serif",
@@ -12,6 +12,7 @@
             numAncestors: 1,
             treeNodePadding:220,
             treeLevelPadding:200,
+            nodeIconGap:30,
             arrowRight: function() {
                 return "&#xe092;";
             },
@@ -597,7 +598,7 @@
 
         function generateChildExpanders(layout, nodes, expanders) {
 
-            const iconGap = 30;
+            const iconGap = additionalOptions.nodeIconGap;
             const circleRadius = 10;
             const pointerSize = 20;
             const lineWidth = 4;
@@ -650,7 +651,7 @@
         }
 
         function generateParentExpanders(layout, expanders) {
-            const iconGap = 30;
+            const iconGap = additionalOptions.nodeIconGap;
             const circleRadius = 10;
             const pointerSize = 20;
             const lineWidth = 4;
