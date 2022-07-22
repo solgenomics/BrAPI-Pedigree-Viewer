@@ -4,13 +4,15 @@
             credentials: 'same-site',
             urlTarget: '_blank',
             nodeNameFn: function(d) {
-                return d.value.name;
+                return [d.value.name];
             },
             textSize: "14",
             textFont: "sans-serif",
+            textMargin: 5,
             numAncestors: 1,
             treeNodePadding:220,
             treeLevelPadding:200,
+            nodeIconGap:30,
             arrowRight: function() {
                 return "&#xe092;";
             },
@@ -20,7 +22,13 @@
             arrowDown: function() {
                 return "&#xe094;";
             },
+            urlFunc: urlFunc!=undefined ? urlFunc : function(){return null},
         }, options);
+        const constants = {
+            nodeDetails: {
+                highlightExtend: 5
+            }
+        }
         var pdgv = {};
         var brapijs = BrAPI(server,version,auth,undefined,additionalOptions.credentials);
         var root = null;
@@ -38,8 +46,10 @@
         
         var tree_level_padding_default = additionalOptions.treeLevelPadding;
         var tree_level_padding = tree_level_padding_default;
-        
-        urlFunc = urlFunc!=undefined?urlFunc:function(){return null};
+
+        //link curve generators
+        var stepline = d3.line().curve(d3.curveStepAfter);
+        var curveline = d3.line().curve(d3.curveBasis);
                 
         pdgv.newTree = function(stock_id,callback){
             root = stock_id;
@@ -89,14 +99,14 @@
                 marker_val.then((md)=>{
                     marker_data[germplasmID] = md;
                     md.forEach(mv=>{
-                        widths[0] = Math.max(widths[0]||0,getTextSize(mv.name)+10);
+                        widths[0] = Math.max(widths[0]||0,getTextSize(mv.name).width+10);
                         mv.values.forEach((v,i)=>{
                             if(v.value.length<2){
                                 widths[i+1] = Math.max(widths[i+1]||0,22);
                                 return 
                             }
                             else{
-                                widths[i+1] = Math.max(widths[i+1]||0,getTextSize(v.value)+10);
+                                widths[i+1] = Math.max(widths[i+1]||0,getTextSize(v.value).width+10);
                             }
                         })
                         if(widths[0]){
@@ -208,7 +218,6 @@
         }
         
         function drawTree(trans,draw_width,draw_height){
-            console.log("redraw");
             if(!myTree) return;
             var layout = myTree();
                         
@@ -298,14 +307,6 @@
                 nodeLayer = content.append('g').classed('node-layer',true);
             }
             
-            //link curve generators
-            var stepline = d3.line().curve(d3.curveStepAfter);
-            var curveline = d3.line().curve(d3.curveBasis);
-            var build_curve = function(d){
-              if (d.type=="parent->mid") return curveline(d.path);
-              if (d.type=="mid->child") return stepline(d.path);
-            };
-            
             //draw nodes
             var nodes = nodeLayer.selectAll('.node')
               .data(layout.nodes,function(d){return d.id;});
@@ -324,6 +325,7 @@
             var groupNodes = newNodes.filter(function(d){
                 return d.type=="node-group";
             });
+
             //draw node group expanders
             groupNodes.append("circle")
               .style("cursor","pointer")
@@ -340,148 +342,24 @@
               .attr('class', 'glyphicon')
               .html(additionalOptions.arrowRight())
               .attr('fill',"white");
-            //create expander handles on nodes
+
             var expanders = nodeNodes.append('g').classed("expanders",true);
-            var child_expander = expanders.append("g").classed("child-expander",true)
-            child_expander.append("path")
-              .attr("fill","none")
-              .attr("stroke","purple")
-              .attr("stroke-width",4)
-              .attr("d",curveline([[0,20],[0,40]]));
-            child_expander.append("circle")
-              .style("cursor","pointer")
-              .attr("fill","purple")
-              .attr("stroke","purple")
-              .attr("cy",45)
-              .attr("r",10);
-            child_expander.append('text')
-              .style("cursor","pointer")
-              .attr('y',52)
-              .attr('x',-0.5)
-              .attr("font-size",additionalOptions.textFont+"px")
-              .attr("font-weight","bold")
-              .attr('text-anchor',"middle")
-              .attr('class', 'glyphicon')
-              .html(additionalOptions.arrowDown())
-              .attr('fill',"white");
-            child_expander.on("click",function(d){
-              d3.select(this).on('click',null);
-              var end_blink = load_blink(d3.select(this).select("circle").node());
-              var to_load = d.value.children.filter(Boolean).map(String);
-              load_nodes(to_load,function(nodes){
-                  end_blink();
-                  layout.pdgtree.add(nodes);
-                  drawTree(d3.transition().duration(700));
-              });
-            });
-            var parent_expander = expanders.append("g").classed("parent-expander",true)
-            parent_expander.append("path")
-              .attr("fill","none")
-              .attr("stroke","purple")
-              .attr("stroke-width",4)
-              .attr("d",curveline([[0,0],[0,-40]]));
-            parent_expander.append("circle")
-              .style("cursor","pointer")
-              .attr("fill","purple")
-              .attr("stroke","purple")
-              .attr("cy",-45)
-              .attr("r",10);
-            parent_expander.append('text')
-              .style("cursor","pointer")
-              .attr('y',-39)
-              .attr('x',-0.5)
-              .attr("font-size",additionalOptions.textFont+"px")
-              .attr("font-weight","bold")
-              .attr('text-anchor',"middle")
-              .attr('class', 'glyphicon')
-              .html(additionalOptions.arrowUp())
-              .attr('fill',"white");
-            parent_expander.on("click",function(d){
-              d3.select(this).on('click',null);
-              var end_blink = load_blink(d3.select(this).select("circle").node());
-              var to_load = [d.value.mother_id,d.value.father_id].filter(Boolean).map(String);
-              load_nodes(to_load,function(nodes){
-                  end_blink();
-                  layout.pdgtree.add(nodes);
-                  drawTree(d3.transition().duration(700));
-              });
-            });
-            nodeNodes.append('rect').classed("node-name-highlight",true)
-              .attr('fill',function(d){
-                  return d.id==root?"pink":"none";
-              })
-              .attr('stroke-width',0)
-              .attr("width",220)
-              .attr("height",30)
-              .attr("y",-5)
-              .attr("rx",15)
-              .attr("ry",15)
-              .attr("x",-105);
-            nodeNodes.append('rect').classed("node-name-wrapper",true)
-              .attr('fill',"white")
-              .attr('stroke',"grey")
-              .attr('stroke-width',2)
-              .attr("width",200)
-              .attr("height",20)
-              .attr("y",0)
-              .attr("rx",10)
-              .attr("ry",10)
-              .attr("x",-100);
-              var nodeUrlLinks = nodeNodes.filter(function(d){
-                  var url = urlFunc(d.id);
-                  if (url!==null){
-                    d.url = url;
-                    return true;
-                  }
-                  return false;
-                })
-                .append('a')
-                .attr('href',function(d){
-                  return urlFunc(d.id);
-                })
-                .attr('target',additionalOptions.urlTarget)
-                .append('text').classed('node-name-text',true)
-                .attr('y',15)
-                .attr('text-anchor',"middle")
-                .text(function(d){
-                  return additionalOptions.nodeNameFn(d);
-                })
-                .attr('fill',"black");
-              nodeNodes.filter(function(d){return d.url===undefined;})
-                .append('text').classed('node-name-text',true)
-                .attr('y',15)
-                .attr('text-anchor',"middle")
-                .text(function(d){
-                    return additionalOptions.nodeNameFn(d);
-                })
-                .attr('fill',"black");
-            
-            //create marker_groups on nodes
-            nodeNodes.append('g').classed("marker_group",true)
-                .append("rect")
-                .classed("marker-connector",true)
-                .attr('stroke',"none")
-                .attr('fill',"gray")
-                .attr("y",9)
-                .attr("x",0)
-                .attr("height",2)
-                .attr("width",20);
-                
-            //set node width to text width
-            nodeNodes.each(function(d){
-                var nn = d3.select(this);
-                var ctl = nn.select('.node-name-text').node().getComputedTextLength();
-                var w = ctl+20;
-                nn.select('.node-name-wrapper')
-                    .attr("width",w)
-                    .attr("x",-w/2);
-                nn.select('.node-name-highlight')
-                    .attr("width",w+10)
-                    .attr("x",-(w+10)/2);
-                nn.select('.marker_group').attr("transform",`translate(${w/2},0)`)
-            });
-            
-            
+
+            // Generate nodes
+            generateNodesHTML(root, nodeNodes, additionalOptions);
+
+            //create expander handles on nodes
+            generateChildExpanders(layout, nodeNodes, expanders);
+            generateParentExpanders(layout, expanders);
+
+            // Create links
+            // TODO: Need to modify the link start
+            var links = linkLayer.selectAll('.link')
+              .data(layout.links,function(d){return d.id;});
+            generateLinks(links, trans);
+
+            // Create marker_groups on nodes
+            generateNodeMarkerConnectors(nodeNodes, additionalOptions);
             
             var allNodes = newNodes.merge(nodes);
             
@@ -511,7 +389,6 @@
                 .attr("y",10);
             var allmks = newmks.merge(mks);
             allmks.attr("transform",(d,i)=>`translate(15,${i*25})`)
-            console.log(marker_data);
             allmks.select(".marker-bg").attr("width",d=>marker_data.__widths[0]);
             allmks.select("text")
                 .attr("x",d=>marker_data.__widths[0]/2)
@@ -572,49 +449,248 @@
                 drawTree(d3.transition().duration(700).ease(d3.easeLinear));
             });
             var oldNodes = nodes.exit().remove();
+        }
 
-            
+        function generateNodesHTML(root, nodes, options) {
+            const highlightThickness = 5;
+            const textMarginVertical = 5;
+            const textMarginHorizontal = 10;
+
+            nodes.each(function(d) {
+                var node = d3.select(this);
+
+                // Get text input as array
+                const nameObject = options.nodeNameFn(d);
+                const textAsArray = typeof nameObject === 'string' ? [nameObject] : nameObject;
+
+                // Find the total height and max width of the text
+                var totalHeight = 0;
+                var maxWidth = 0;
+                textAsArray.forEach(function(line) {
+                    const textSize = getTextSize(line);
+                    totalHeight += textSize.fontBoundingBoxAscent;
+                    maxWidth = textSize.width > maxWidth ? textSize.width : maxWidth;
+                });
+                const nodeShapeHeight = totalHeight + (textMarginVertical * 2);
+                const nodeShapeWidth = maxWidth + (textMarginHorizontal * 2);
+
+                const highlightHeight = nodeShapeHeight + (highlightThickness * 2);
+                const highlightWidth = nodeShapeWidth + (highlightThickness * 2);
+
+                // Node Highlight
+                node.append('rect').classed("node-name-highlight",true)
+                  .attr('fill',function(d){
+                      return d.id==root?"pink":"none";
+                  })
+                  .attr('stroke-width',0)
+                  .attr("width",highlightWidth)
+                  .attr("height", highlightHeight)
+                  .attr("y",-(highlightThickness))
+                  .attr("rx",15)
+                  .attr("ry",15)
+                  .attr("x",-(highlightWidth/2));
+
+                // Node shape
+                node.append('rect').classed("node-name-wrapper",true)
+                  .attr('fill',"white")
+                  .attr('stroke',"grey")
+                  .attr('stroke-width',2)
+                  .attr("width",nodeShapeWidth)
+                  .attr("height", nodeShapeHeight)
+                  .attr("y",0)
+                  .attr("rx",10)
+                  .attr("ry",10)
+                  .attr("x",-(nodeShapeWidth/2));
+
+                // Href
+                const url = options.urlFunc(d.id, d);
+                if (url != null) {
+                    var href = node.append('a')
+                      .attr('href', url)
+                      .attr('target', options.urlTarget);
+                    appendText(href, textAsArray);
+                } else {
+                    appendText(node, textAsArray);
+                }
+
+                // Node contents
+
+
+                // Adjust marker group
+                node.select('.marker_group').attr("transform",`translate(${nodeShapeWidth/2},0)`)
+            });
+        }
+
+        function appendText(element, textAsArray) {
+            for (const index in textAsArray) {
+                const textY = getTextSize(textAsArray[index]).fontBoundingBoxAscent * (parseInt(index) + 1);
+                element.append('text').classed('node-name-text',true)
+                  .attr('y', textY)
+                  .attr('text-anchor',"middle")
+                  .attr('font-size', additionalOptions.textSize)
+                  .text(textAsArray[index])
+                  .attr('fill',"black");
+            }
+        }
+
+        function generateNodeMarkerConnectors(nodes) {
+
+            // TODO: Check where this is supposed to be
+            nodes.each(function(data) {
+                const node = d3.select(this);
+                // Get the node height
+                const nodeHeight = node.select('.node-name-highlight').attr('height');
+                const nodeMargin = 9;
+
+                node.append('g').classed("marker_group",true)
+                  .append("rect")
+                  .classed("marker-connector",true)
+                  .attr('stroke',"none")
+                  .attr('fill',"gray")
+                  .attr("y", 9)
+                  .attr("x",0)
+                  .attr("height",2)
+                  .attr("width",20);
+            })
+        }
+
+        function generateLinks(links, trans) {
+
             //link colors
             var link_color = function(d){
-              if (d.type=="mid->child") return 'purple';
-              if (d.type=="parent->mid"){
-                //if its the first parent, red. Otherwise, blue.
-                var representative = d.sinks[0].type=="node-group"?
-                        d.sinks[0].value[0].value 
-                        : d.sinks[0].value;
-                if (representative.mother_id == d.source.id){
-                    return "red";
-                } 
-                else {
-                    return "blue";
+                if (d.type=="mid->child") return 'purple';
+                if (d.type=="parent->mid"){
+                    //if its the first parent, red. Otherwise, blue.
+                    var representative = d.sinks[0].type=="node-group"?
+                      d.sinks[0].value[0].value
+                      : d.sinks[0].value;
+                    if (representative.mother_id == d.source.id){
+                        return "red";
+                    }
+                    else {
+                        return "blue";
+                    }
                 }
-              }
-              return 'gray';
+                return 'gray';
             }
-            
-            //make links
-            var links = linkLayer.selectAll('.link')
-              .data(layout.links,function(d){return d.id;});
+
+
+            var build_curve = function(d){
+                if (d.type=="parent->mid") return curveline(d.path);
+                if (d.type=="mid->child") return stepline(d.path);
+            };
+
             var newLinks = links.enter().append('g')
               .classed('link',true);
             newLinks.append('path')
-              .attr('d',function(d){
-                var begin = (d.sink || d.source);
-                if(d3.event && d3.event.type=="click"){
-                  begin = d3.select(d3.event.target).datum();
-                }
-                return curveline([[begin.x,begin.y],[begin.x,begin.y],[begin.x,begin.y],[begin.x,begin.y]]);
-              })
               .attr('fill','none')
               .attr('stroke',link_color)
               .attr('opacity',function(d){
-                if (d.type=="parent->mid") return 0.7;
-                return 0.999;
+                  if (d.type=="parent->mid") return 0.7;
+                  return 0.999;
               })
               .attr('stroke-width',4);
+            // Transition for the path drawing
             var allLinks = newLinks.merge(links);
             allLinks.transition(trans).select('path').attr('d',build_curve);
             var oldNodes = links.exit().remove();
+        }
+
+        function generateChildExpanders(layout, nodes, expanders) {
+
+            const iconGap = additionalOptions.nodeIconGap;
+            const circleRadius = 10;
+            const pointerSize = 20;
+            const lineWidth = 4;
+            const transitionDuration = 700;
+
+
+            var child_expanders = expanders.append("g").classed("child-expander",true);
+            nodes.each(function() {
+
+                const expander = d3.select(this);
+                const rectHeight = expander.select('.node-name-wrapper').attr('height');
+                const iconY = parseInt(rectHeight) + iconGap;
+                const pointerY = iconY + circleRadius/2;
+
+                var child_expander = expander.select(".child-expander");
+                child_expander.append("path")
+                  .attr("fill","none")
+                  .attr("stroke","purple")
+                  .attr("stroke-width",lineWidth)
+                  .attr("d",curveline([[0,20],[0,iconY]]));
+                child_expander.append("circle")
+                  .style("cursor","pointer")
+                  .attr("fill","purple")
+                  .attr("stroke","purple")
+                  .attr("cy",iconY)
+                  .attr("r",circleRadius);
+                child_expander.append('text')
+                  .style("cursor","pointer")
+                  .attr('y',pointerY)
+                  .attr('x',-0.5)
+                  .attr("font-size",pointerSize+"px")
+                  .attr("font-weight","bold")
+                  .attr('text-anchor',"middle")
+                  .attr('class', 'glyphicon')
+                  .html(additionalOptions.arrowDown())
+                  .attr('fill',"white");
+                child_expander.on("click",function(d){
+                    d3.select(this).on('click',null);
+                    var end_blink = load_blink(d3.select(this).select("circle").node());
+                    var to_load = d.value.children.filter(Boolean).map(String);
+                    load_nodes(to_load,function(newNodes){
+                        end_blink();
+                        layout.pdgtree.add(newNodes);
+                        drawTree(d3.transition().duration(transitionDuration));
+                    });
+                });
+            });
+            // Get size of the parent node
+
+        }
+
+        function generateParentExpanders(layout, expanders) {
+            const iconGap = additionalOptions.nodeIconGap;
+            const circleRadius = 10;
+            const pointerSize = 20;
+            const lineWidth = 4;
+            const transitionDuration = 700;
+            const iconY = -(iconGap);
+            const pointerY = iconY + circleRadius/2;
+
+            var parent_expander = expanders.append("g").classed("parent-expander",true)
+            parent_expander.append("path")
+              .attr("fill","none")
+              .attr("stroke","purple")
+              .attr("stroke-width",lineWidth)
+              .attr("d",curveline([[0,0],[0,-40]]));
+            parent_expander.append("circle")
+              .style("cursor","pointer")
+              .attr("fill","purple")
+              .attr("stroke","purple")
+              .attr("cy",iconY)
+              .attr("r",circleRadius);
+            parent_expander.append('text')
+              .style("cursor","pointer")
+              .attr('y',pointerY)
+              .attr('x',-0.5)
+              .attr("font-size",pointerSize+"px")
+              .attr("font-weight","bold")
+              .attr('text-anchor',"middle")
+              .attr('class', 'glyphicon')
+              .html(additionalOptions.arrowUp())
+              .attr('fill',"white");
+            parent_expander.on("click",function(d){
+                d3.select(this).on('click',null);
+                var end_blink = load_blink(d3.select(this).select("circle").node());
+                var to_load = [d.value.mother_id,d.value.father_id].filter(Boolean).map(String);
+                load_nodes(to_load,function(newNodes){
+                    end_blink();
+                    layout.pdgtree.add(newNodes);
+                    drawTree(d3.transition().duration(transitionDuration));
+                });
+            });
         }
         
         return pdgv;
@@ -657,6 +733,6 @@
         var context = canvas.getContext('2d');
         return function (text) {
             context.font = fontSize + 'px ' + fontFace;
-            return context.measureText(text).width;
+            return context.measureText(text);
         };
     }
