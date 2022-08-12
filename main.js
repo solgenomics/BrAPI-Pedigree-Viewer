@@ -733,6 +733,9 @@
         var context = canvas.getContext('2d');
         return function (text) {
             context.font = fontSize + 'px ' + fontFace;
-            return context.measureText(text);
+            return {
+                'width': context.measureText(txt).width,
+                'height': parseInt(context.font)
+            };
         };
     }
