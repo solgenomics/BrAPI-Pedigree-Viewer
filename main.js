@@ -468,7 +468,7 @@
                 var maxWidth = 0;
                 textAsArray.forEach(function(line) {
                     const textSize = getTextSize(line);
-                    totalHeight += textSize.fontBoundingBoxAscent;
+                    totalHeight += textSize.actualBoundingBoxAscent + 5;
                     maxWidth = textSize.width > maxWidth ? textSize.width : maxWidth;
                 });
                 const nodeShapeHeight = totalHeight + (textMarginVertical * 2);
@@ -523,7 +523,7 @@
 
         function appendText(element, textAsArray) {
             for (const index in textAsArray) {
-                const textY = getTextSize(textAsArray[index]).fontBoundingBoxAscent * (parseInt(index) + 1);
+                const textY = (getTextSize(textAsArray[index]).actualBoundingBoxAscent + 5) * (parseInt(index) + 1);
                 element.append('text').classed('node-name-text',true)
                   .attr('y', textY)
                   .attr('text-anchor',"middle")
@@ -733,6 +733,8 @@
         var context = canvas.getContext('2d');
         return function (text) {
             context.font = fontSize + 'px ' + fontFace;
-            return context.measureText(text);
+            let ret = context.measureText(text);
+            ret.height = parseInt(context.font);
+            return ret;
         };
     }
