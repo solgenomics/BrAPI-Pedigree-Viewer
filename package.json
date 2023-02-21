@@ -4,15 +4,13 @@
   "description": "Try it out [here](https://solgenomics.github.io/BrAPI-Pedigree-Viewer/)",
   "main": "build/PedigreeViewer.js",
   "scripts": {
-    "prepare": "rm -rf build && mkdir build && rollup -f umd -n PedigreeViewer -o build/PedigreeViewer.js -- main.js",
-    "build_example": "rm -rf example && mkdir example && wrapbrapp && cp build/PedigreeViewer.js node_modules/@solgenomics/d3-pedigree-tree/build/d3-pedigree-tree.js node_modules/@solgenomics/brapijs/build/BrAPI.js example/",
-    "version": "npm run prepare && npm run build_example && git add example"
+    "prepare": "rm -rf build && mkdir build && rollup -f umd -n PedigreeViewer -o build/PedigreeViewer.js -- main.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/solgenomics/BrAPI-Pedigree-Viewer.git"
   },
-  "author": "David Lyon <npm@dauglyon.com>",
+  "author": "Mirella Flores, David Lyon",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/solgenomics/BrAPI-Pedigree-Viewer/issues"
@@ -22,10 +20,10 @@
     "@solgenomics/d3-pedigree-tree": "^1.1.1"
   },
   "devDependencies": {
-    "@solgenomics/brapp-wrapper": "^1.1.0"
+    "@solgenomics/brapp-wrapper": "^1.2.0"
   },
   "peerDependencies": {
-    "@solgenomics/brapijs": "^0.3.6",
+    "@solgenomics/brapijs": "^2.0.3",
     "d3": "^4.11.0"
   },
   "brapp": {
@@ -35,5 +33,11 @@
     "forward": "example_src/forward.html",
     "main": "example_src/main.html",
     "scripts": "example_src/scripts.html"
-  }
+  },
+  "directories": {
+    "example": "example"
+  },
+  "keywords": [
+    "brapiv2.0"
+  ]
 }
