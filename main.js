@@ -7,7 +7,8 @@
         var loaded_nodes = {};
         var myTree = null;
         var locationSelector = null;
-        var newTreeLoading = null;
+        var pedigrees =null;
+
         var load_markers = function(){return []};
         var marker_data = {};
         var getTextSize = TextSizer("14","sans-serif");
@@ -25,13 +26,21 @@
             loaded_nodes = {};
             var all_nodes = [];
             var levels =0;
-            var number_ancestors =1;
+            var number_ancestors;
+            if(version=='v1.3' || version=='v2.0'){ number_ancestors =3; }
+            else {number_ancestors = 10 };
+
+            var germplasm = brapijs.data([stock_id]);
+            pedigrees = germplasm.pedigree(function(d){return {'germplasmDbId':d,'pedigreeDepth':number_ancestors,'progenyDepth':number_ancestors}});
+
             load_node_and_all_ancestors([stock_id]);
             function load_node_and_all_ancestors(ids){
                 load_nodes(ids, function(nodes){
+                    if(!(version=='v1.3' || version=='v2.0')) nodes = nodes[0];
                     [].push.apply(all_nodes,nodes);
                     var mothers = nodes.map(function(d){return d.mother_id});
                     var fathers = nodes.map(function(d){return d.father_id});
+                  
                     var parents = mothers.concat(fathers).filter(function(d, index, self){
                         return d!==undefined &&
                                d!==null &&
@@ -125,10 +134,13 @@
         }
         
         function load_nodes(stock_ids,callback){
+
+          if(version=='v1.3' || version=='v2.0'){
+
             var germplasm = brapijs.data(stock_ids);
-            var pedigrees = germplasm.germplasm_pedigree(function(d){return {'germplasmDbId':d}});
-            var progenies = germplasm.germplasm_progeny(function(d){return {'germplasmDbId':d, 'pageSize':10000}},"map");
-            pedigrees.join(progenies,germplasm).filter(function(ped_pro_germId){
+            var pedigrees1 = germplasm.germplasm_pedigree(function(d){return {'germplasmDbId':d,'pageSize':1000}});
+            var progenies = germplasm.germplasm_progeny(function(d){return {'germplasmDbId':d, 'pageSize':1000}},"map");
+            pedigrees1.join(progenies,germplasm).filter(function(ped_pro_germId){
                 if (ped_pro_germId[0]===null || ped_pro_germId[1]===null) {
                     console.log("Failed to load progeny or pedigree for "+ped_pro_germId[2]);
                     return false;
@@ -183,6 +195,50 @@
             }).all(function(nodes){
                 callback(nodes);
             });
+            
+          } else {
+            pedigrees.map(function(ped_pro_germId){
+              return ped_pro_germId.data;
+
+            }).map(function(ped_pro_germId){
+                
+                var nodes = stock_ids.map(stock_id => {
+
+                    var mother = null, 
+                        father = null;
+
+                    var x = ped_pro_germId.findIndex(x => x.germplasmDbId === stock_id);
+                    
+                    if(x<0) { return null } 
+
+                    var i = ped_pro_germId[x].parents.map(function(e) { return e.parentType; }).indexOf('FEMALE');
+                    var j = ped_pro_germId[x].parents.map(function(e) { return e.parentType; }).indexOf('MALE');
+
+                    if(i>=0) mother = ped_pro_germId[x].parents[i].germplasmDbId;
+                    if(j>=0) father = ped_pro_germId[x].parents[j].germplasmDbId;
+                  
+                    var node = {
+                        'id':ped_pro_germId[x].germplasmDbId,
+                        'mother_id':mother,
+                        'father_id':father,
+                        'name': ped_pro_germId[x].germplasmName,
+                        'children':ped_pro_germId[x].progeny.filter(Boolean).map(function(d){
+                            return d.germplasmDbId;
+                        })
+                    };
+
+                    loaded_nodes[node.id] = node;
+                    load_markers(node.id);
+                    return node;  
+
+                } );
+  
+                return nodes.filter(v => v != null);  
+
+            }).all(function(nodes){
+              callback(nodes);
+            });
+          }
         }
         
         function drawTree(trans,draw_width,draw_height){
@@ -348,6 +404,7 @@
               var to_load = d.value.children.filter(Boolean).map(String);
               load_nodes(to_load,function(nodes){
                   end_blink();
+                  if(!(version=='v1.3' || version=='v2.0')) nodes = nodes[0];
                   layout.pdgtree.add(nodes);
                   drawTree(d3.transition().duration(700));
               });
@@ -380,6 +437,7 @@
               var to_load = [d.value.mother_id,d.value.father_id].filter(Boolean).map(String);
               load_nodes(to_load,function(nodes){
                   end_blink();
+                  if(!(version=='v1.3' || version=='v2.0')) nodes = nodes[0];
                   layout.pdgtree.add(nodes);
                   drawTree(d3.transition().duration(700));
               });
