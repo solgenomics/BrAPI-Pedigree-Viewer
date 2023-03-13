@@ -1,6 +1,6 @@
 version: "1"
 rules:
-  - base: master
+  - base: develop
     upstream: solgenomics:master
     mergeMethod: merge
     assignees:
